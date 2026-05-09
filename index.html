@@ -131,7 +131,7 @@
 
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import{getFirestore,doc,setDoc,onSnapshot}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import{getFirestore,doc,setDoc,getDoc}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ╔══════════════════════════════════════════════════════════╗
 // ║  🔧 COLLE TA CONFIG FIREBASE ICI                        ║
@@ -188,24 +188,44 @@ window.APTS=APTS;
 const syncEl=document.getElementById("sync");
 function syncOk(){syncEl.className="sync-badge sync-ok";syncEl.textContent="✅ Synchronisé";}
 function syncErr(){syncEl.className="sync-badge sync-err";syncEl.textContent="❌ Hors ligne";}
-function syncBusy(){syncEl.className="sync-badge sync-load";syncEl.innerHTML='<span class="spinner"></span>Sauvegarde…';}
+function syncBusy(msg="Sauvegarde…"){syncEl.className="sync-badge sync-load";syncEl.innerHTML=`<span class="spinner"></span>${msg}`;}
+const CACHE_KEY="elec_jeancamp_cache";
 
-// Écoute temps réel — tous les appareils se mettent à jour automatiquement
-onSnapshot(REF,(snap)=>{
-  if(snap.exists()){window._S=snap.data();}
-  else{setDoc(REF,DEFAULTS);window._S=JSON.parse(JSON.stringify(DEFAULTS));}
+// 1) Affichage immédiat depuis le cache localStorage
+const cached=localStorage.getItem(CACHE_KEY);
+if(cached){try{window._S=JSON.parse(cached);}catch(e){}}
+if(!window._S) window._S=JSON.parse(JSON.stringify(DEFAULTS));
+refreshCurrent();
+
+// 2) Chargement Firebase en arrière-plan (silencieux)
+syncBusy("Chargement…");
+getDoc(REF).then(snap=>{
+  if(snap.exists()){
+    window._S=snap.data();
+    localStorage.setItem(CACHE_KEY,JSON.stringify(window._S));
+  } else {
+    // Premier lancement : on pousse les DEFAULTS
+    setDoc(REF,window._S);
+    localStorage.setItem(CACHE_KEY,JSON.stringify(window._S));
+  }
   syncOk();
   refreshCurrent();
-},(e)=>{
-  console.error(e);syncErr();
-  if(!window._S) window._S=JSON.parse(JSON.stringify(DEFAULTS));
-  refreshCurrent();
+}).catch(e=>{
+  console.error(e);
+  syncErr();
 });
 
+// Sauvegarde Firebase + cache local
 window.save=async function(){
   syncBusy();
-  try{await setDoc(REF,window._S);}
-  catch(e){syncErr();alert("Erreur Firebase : "+e.message);}
+  try{
+    await setDoc(REF,window._S);
+    localStorage.setItem(CACHE_KEY,JSON.stringify(window._S));
+    syncOk();
+  }catch(e){
+    syncErr();
+    alert("Erreur Firebase : "+e.message);
+  }
 };
 
 const S=()=>window._S;
