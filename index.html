@@ -138,12 +138,12 @@ import{getFirestore,doc,setDoc,onSnapshot}from"https://www.gstatic.com/firebasej
 // ║  Console Firebase → Paramètres → Tes apps → Web         ║
 // ╚══════════════════════════════════════════════════════════╝
 const firebaseConfig = {
-   apiKey: "AIzaSyDYlWjtDW2RwUrI4EYqgEgAKpi-sG0nXQ8",
-  authDomain: "suivi-electricite-5ca00.firebaseapp.com",
-  projectId: "suivi-electricite-5ca00",
-  storageBucket: "suivi-electricite-5ca00.firebasestorage.app",
-  messagingSenderId: "305909742265",
-  appId: "1:305909742265:web:0279d4b3ed6aa5f1403968"
+  apiKey:            "REMPLACE_PAR_TON_API_KEY",
+  authDomain:        "REMPLACE_PAR_TON_AUTH_DOMAIN",
+  projectId:         "REMPLACE_PAR_TON_PROJECT_ID",
+  storageBucket:     "REMPLACE_PAR_TON_STORAGE_BUCKET",
+  messagingSenderId: "REMPLACE_PAR_TON_MESSAGING_SENDER_ID",
+  appId:             "REMPLACE_PAR_TON_APP_ID"
 };
 // ╔══════════════════════════════════════════════════════════╗
 // ║  Règles Firestore à activer (mode test) :               ║
@@ -243,7 +243,18 @@ function renderDashboard(){
     <div class="stat"><div class="stat-label">Dernier relevé</div><div class="stat-value" style="font-size:15px;">${last.date}</div></div>
     <div class="stat"><div class="stat-label">Conso mois</div><div class="stat-value">${totD.toFixed(0)}<span style="font-size:12px;font-weight:400"> kWh</span></div></div>
     <div class="stat"><div class="stat-label">Coût mois</div><div class="stat-value">${totP.toFixed(0)}<span style="font-size:12px;font-weight:400"> €</span></div></div>
-    <div class="stat"><div class="stat-label">Tarif kWh</div><div class="stat-value" style="font-size:15px;">${(S().tarif*100).toFixed(1)}<span style="font-size:12px;font-weight:400"> c€</span></div></div>
+    <div class="stat">
+      <div class="stat-label">⚡ Tarif kWh</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+        <input id="db-tarif" type="number" step="0.001" value="${S().tarif}"
+          style="width:80px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:5px 7px;font-size:16px;font-weight:600;color:var(--text);font-family:inherit;outline:none;"
+          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border2)'"
+          onkeydown="if(event.key==='Enter') appliquerTarif()" />
+        <span style="font-size:12px;color:var(--text2);">€</span>
+        <button onclick="appliquerTarif()" style="padding:5px 10px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;">OK</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;">soit ${(S().tarif*100).toFixed(2)} c€/kWh</div>
+    </div>
   </div>`;
 
   h+=`<div class="card"><div class="card-title">📊 Consommation — dernier mois</div>`;
@@ -273,6 +284,14 @@ function renderDashboard(){
   getAlertes().forEach(a=>h+=`<div class="${a.l}-box">⚠️ ${a.m}</div>`);
   document.getElementById("tab-dashboard").innerHTML=h;
 }
+
+window.appliquerTarif=async function(){
+  const v=parseFloat(document.getElementById("db-tarif").value);
+  if(isNaN(v)||v<=0){alert("Tarif invalide.");return;}
+  S().tarif=v;
+  await window.save();
+  renderDashboard();
+};
 
 // ── VUE ANNUELLE ───────────────────────────────────────────
 let selYear=null;
