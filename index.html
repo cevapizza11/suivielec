@@ -5,115 +5,102 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Suivi Électricité — Jean Camp</title>
 <style>
-  :root {
-    --bg:#f5f4f0;--surface:#ffffff;--surface2:#f0efe9;
-    --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
-    --text:#1a1a18;--text2:#5a5955;--text3:#9a9890;
-    --blue:#1a6fc4;--blue-bg:#e8f1fb;
-    --green:#0f7a5a;--green-bg:#e0f4ed;
-    --orange:#c44a1a;--orange-bg:#faeae3;
-    --purple:#5a45b8;--purple-bg:#edeafb;
-    --success:#0f7a5a;--success-bg:#e0f4ed;
-    --warning:#b06010;--warning-bg:#fef3e2;
-    --danger:#b02020;--danger-bg:#fdeaea;
-    --radius:10px;--radius-sm:6px;
-  }
-  @media(prefers-color-scheme:dark){
-    :root{
-      --bg:#1a1a18;--surface:#242422;--surface2:#2e2e2a;
-      --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.18);
-      --text:#f0efe9;--text2:#a8a7a0;--text3:#68675f;
-      --blue:#5aabf0;--blue-bg:#0c2a45;
-      --green:#3acfa0;--green-bg:#083325;
-      --orange:#f0844a;--orange-bg:#3a1505;
-      --purple:#9a8af0;--purple-bg:#1a153a;
-      --success:#3acfa0;--success-bg:#083325;
-      --warning:#e09040;--warning-bg:#3a2005;
-      --danger:#f06060;--danger-bg:#3a0a0a;
-    }
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
-  .app{max-width:880px;margin:0 auto;padding:1rem;}
-  .header{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;padding:16px 20px;background:var(--surface);border-radius:var(--radius);border:0.5px solid var(--border);}
-  .header-icon{font-size:28px;}
-  .header h1{font-size:18px;font-weight:600;}
-  .header p{font-size:12px;color:var(--text2);margin-top:2px;}
-  .sync-badge{margin-left:auto;font-size:11px;padding:4px 10px;border-radius:20px;border:0.5px solid var(--border2);white-space:nowrap;}
-  .sync-ok{background:var(--success-bg);color:var(--success);}
-  .sync-err{background:var(--danger-bg);color:var(--danger);}
-  .sync-load{background:var(--surface2);color:var(--text2);}
-  .tabs{display:flex;gap:4px;margin-bottom:1.25rem;background:var(--surface2);border-radius:var(--radius);padding:4px;flex-wrap:wrap;}
-  .tab{flex:1;min-width:80px;padding:8px 6px;font-size:12px;cursor:pointer;border:none;background:none;color:var(--text2);border-radius:var(--radius-sm);font-family:inherit;text-align:center;}
-  .tab.active{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,0.12);}
-  .tab-content{display:none;}
-  .tab-content.active{display:block;}
-  .card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
-  .card-title{font-size:14px;font-weight:600;margin-bottom:12px;}
-  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem;}
-  .stat{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;}
-  .stat-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
-  .stat-value{font-size:22px;font-weight:600;line-height:1;}
-  .bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-  .bar-label{font-size:12px;color:var(--text2);width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .bar-track{flex:1;background:var(--surface2);border-radius:4px;height:10px;}
-  .bar-fill{height:10px;border-radius:4px;}
-  .bar-val{font-size:12px;font-weight:500;min-width:55px;text-align:right;}
-  .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500;}
-  .badge-ok{background:var(--success-bg);color:var(--success);}
-  .badge-warn{background:var(--warning-bg);color:var(--warning);}
-  .badge-danger{background:var(--danger-bg);color:var(--danger);}
-  table{width:100%;border-collapse:collapse;font-size:12px;}
-  th{font-size:11px;color:var(--text2);font-weight:500;padding:6px 8px;text-align:right;border-bottom:0.5px solid var(--border2);}
-  th:first-child{text-align:left;}
-  td{padding:6px 8px;text-align:right;border-bottom:0.5px solid var(--border);}
-  td:first-child{text-align:left;}
-  tr:last-child td{border-bottom:none;}
-  tr.total td{font-weight:600;background:var(--surface2);}
-  tr.proj td{color:var(--text2);font-style:italic;}
-  tr.proj.alerte td{background:var(--warning-bg);color:var(--warning);font-style:normal;}
-  .form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
-  .form-group label{font-size:11px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:0.3px;}
-  .form-group input{background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none;width:100%;}
-  .form-group input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,196,0.12);}
-  .fg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 14px;}
-  .btn{padding:9px 20px;border-radius:var(--radius-sm);font-size:13px;font-family:inherit;cursor:pointer;border:none;font-weight:500;}
-  .btn-primary{background:var(--blue);color:#fff;}
-  .btn-primary:hover{opacity:0.88;}
-  .btn-del{background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:2px 6px;}
-  .color-p{color:var(--blue);}.color-j{color:var(--green);}.color-e{color:var(--orange);}.color-b{color:var(--purple);}
-  .balance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-bottom:1.25rem;}
-  .balance-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:12px;}
-  .balance-name{font-size:12px;font-weight:600;margin-bottom:8px;}
-  .balance-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:3px;}
-  .balance-total{font-size:16px;font-weight:700;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border);}
-  .warn-box{background:var(--warning-bg);border:0.5px solid var(--warning);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--warning);margin-bottom:10px;}
-  .err-box{background:var(--danger-bg);border:0.5px solid var(--danger);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--danger);margin-bottom:10px;}
-  .year-selector{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;}
-  .year-btn{padding:6px 14px;border-radius:20px;border:0.5px solid var(--border2);background:none;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;}
-  .year-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
-  .spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(0,0,0,0.15);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:4px;}
-  @keyframes spin{to{transform:rotate(360deg);}}
-  @media(max-width:520px){
-    .stats-grid{grid-template-columns:1fr 1fr;}
-    .balance-grid{grid-template-columns:1fr 1fr;}
-    .bar-label{width:75px;font-size:11px;}
-    .tab{font-size:11px;padding:7px 3px;}
-    .header h1{font-size:15px;}
-  }
+:root{
+  --bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+  --text:#1a1a18;--text2:#5a5955;--text3:#9a9890;
+  --blue:#1a6fc4;--green:#0f7a5a;--orange:#c44a1a;--purple:#5a45b8;
+  --ok-bg:#e0f4ed;--ok:#0f7a5a;
+  --warn-bg:#fef3e2;--warn:#b06010;
+  --err-bg:#fdeaea;--err:#b02020;
+  --radius:10px;--rsm:6px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1a1a18;--surface:#242422;--surface2:#2e2e2a;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.18);
+  --text:#f0efe9;--text2:#a8a7a0;--text3:#68675f;
+  --blue:#5aabf0;--green:#3acfa0;--orange:#f0844a;--purple:#9a8af0;
+  --ok-bg:#083325;--ok:#3acfa0;
+  --warn-bg:#3a2005;--warn:#e09040;
+  --err-bg:#3a0a0a;--err:#f06060;
+}}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+.app{max-width:880px;margin:0 auto;padding:1rem;}
+.header{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;padding:16px 20px;background:var(--surface);border-radius:var(--radius);border:.5px solid var(--border);}
+.header h1{font-size:18px;font-weight:600;}
+.header p{font-size:12px;color:var(--text2);margin-top:2px;}
+.sync{margin-left:auto;font-size:11px;padding:4px 10px;border-radius:20px;border:.5px solid var(--border2);white-space:nowrap;}
+.sync.ok{background:var(--ok-bg);color:var(--ok);}
+.sync.err{background:var(--err-bg);color:var(--err);}
+.sync.busy{background:var(--surface2);color:var(--text2);}
+.tabs{display:flex;gap:4px;margin-bottom:1.25rem;background:var(--surface2);border-radius:var(--radius);padding:4px;flex-wrap:wrap;}
+.tab{flex:1;min-width:80px;padding:8px 6px;font-size:12px;cursor:pointer;border:none;background:none;color:var(--text2);border-radius:var(--rsm);font-family:inherit;text-align:center;}
+.tab.active{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.12);}
+.pane{display:none;}.pane.active{display:block;}
+.card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+.ctitle{font-size:14px;font-weight:600;margin-bottom:12px;}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem;}
+.stat{background:var(--surface);border:.5px solid var(--border);border-radius:var(--radius);padding:14px;}
+.slabel{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.sval{font-size:22px;font-weight:600;line-height:1;}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.bar-lbl{font-size:12px;color:var(--text2);width:110px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bar-track{flex:1;background:var(--surface2);border-radius:4px;height:10px;}
+.bar-fill{height:10px;border-radius:4px;}
+.bar-val{font-size:12px;font-weight:500;min-width:55px;text-align:right;}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500;}
+.bok{background:var(--ok-bg);color:var(--ok);}
+.bwarn{background:var(--warn-bg);color:var(--warn);}
+.berr{background:var(--err-bg);color:var(--err);}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{font-size:11px;color:var(--text2);font-weight:500;padding:6px 8px;text-align:right;border-bottom:.5px solid var(--border2);}
+th:first-child{text-align:left;}
+td{padding:6px 8px;text-align:right;border-bottom:.5px solid var(--border);}
+td:first-child{text-align:left;}
+tr:last-child td{border-bottom:none;}
+tr.tot td{font-weight:600;background:var(--surface2);}
+tr.proj td{color:var(--text2);font-style:italic;}
+tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;}
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.fg label{font-size:11px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:.3px;}
+.fg input{background:var(--surface2);border:.5px solid var(--border2);border-radius:var(--rsm);padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none;width:100%;}
+.fg input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,196,.12);}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 14px;}
+.btn{padding:9px 20px;border-radius:var(--rsm);font-size:13px;font-family:inherit;cursor:pointer;border:none;font-weight:500;}
+.btn-p{background:var(--blue);color:#fff;}.btn-p:hover{opacity:.88;}
+.btn-del{background:none;border:none;color:var(--err);cursor:pointer;font-size:14px;padding:2px 6px;}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-bottom:1.25rem;}
+.bcard{background:var(--surface);border:.5px solid var(--border);border-radius:var(--radius);padding:12px;}
+.bcard-name{font-size:12px;font-weight:600;margin-bottom:8px;}
+.bcard-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:3px;}
+.bcard-tot{font-size:16px;font-weight:700;margin-top:8px;padding-top:8px;border-top:.5px solid var(--border);}
+.abox{border-radius:var(--rsm);padding:10px 14px;font-size:12px;margin-bottom:10px;}
+.abox.warn{background:var(--warn-bg);color:var(--warn);border:.5px solid var(--warn);}
+.abox.err{background:var(--err-bg);color:var(--err);border:.5px solid var(--err);}
+.ybtn{padding:6px 14px;border-radius:20px;border:.5px solid var(--border2);background:none;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;}
+.ybtn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(128,128,128,.3);border-top-color:var(--blue);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:4px;}
+@keyframes sp{to{transform:rotate(360deg);}}
+@media(max-width:520px){
+  .sgrid{grid-template-columns:1fr 1fr;}
+  .bgrid{grid-template-columns:1fr 1fr;}
+  .bar-lbl{width:75px;font-size:11px;}
+  .tab{font-size:11px;padding:7px 3px;}
+  .header h1{font-size:15px;}
+}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
-    <div class="header-icon">⚡</div>
+    <div style="font-size:28px">⚡</div>
     <div>
       <h1>Suivi Électricité — Jean Camp</h1>
-      <p>Narbonne · 4 appartements · Synchronisé Firebase</p>
+      <p>Narbonne · 4 appartements</p>
     </div>
-    <span id="sync" class="sync-badge sync-load"><span class="spinner"></span>Connexion…</span>
+    <span id="sync" class="sync busy"><span class="spin"></span>Chargement…</span>
   </div>
-
   <div class="tabs">
     <button class="tab active" onclick="showTab('dashboard')">🏠 Bord</button>
     <button class="tab" onclick="showTab('annuel')">📅 Annuel</button>
@@ -121,264 +108,307 @@
     <button class="tab" onclick="showTab('ajouter')">➕ Ajouter</button>
     <button class="tab" onclick="showTab('locataires')">👤 Locataires</button>
   </div>
-
-  <div id="tab-dashboard" class="tab-content active"><p style="color:var(--text2);padding:1rem;"><span class="spinner"></span>Chargement…</p></div>
-  <div id="tab-annuel" class="tab-content"></div>
-  <div id="tab-releves" class="tab-content"></div>
-  <div id="tab-ajouter" class="tab-content"></div>
-  <div id="tab-locataires" class="tab-content"></div>
+  <div id="pane-dashboard" class="pane active"></div>
+  <div id="pane-annuel" class="pane"></div>
+  <div id="pane-releves" class="pane"></div>
+  <div id="pane-ajouter" class="pane"></div>
+  <div id="pane-locataires" class="pane"></div>
 </div>
 
 <script>
-// ╔══════════════════════════════════════════════════════════╗
-// ║  🔧 CONFIG JSONBin                                      ║
-// ╚══════════════════════════════════════════════════════════╝
+// ════════════════════════════════════════════════════════════
+//  CONFIG JSONBin
+// ════════════════════════════════════════════════════════════
 const BIN_ID  = "69ff6396c0954111d8fcb091";
 const API_KEY = "$2a$10$w8q1L/f0pDxQRu8gWdicXerF2USsSati1MdCZZTo26ieSTBsCfnmy";
-const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
-const HEADERS = {"Content-Type":"application/json","X-Master-Key":API_KEY,"X-Bin-Versioning":"false"};
+const BIN_URL = "https://api.jsonbin.io/v3/b/" + BIN_ID;
+const HDRS    = {"Content-Type":"application/json","X-Master-Key":API_KEY,"X-Bin-Versioning":"false"};
+
+// ════════════════════════════════════════════════════════════
+//  CONSTANTES
+// ════════════════════════════════════════════════════════════
+const APTS = [
+  {id:"pizzeria",name:"Appart Bas Pizzeria",short:"Pizzeria",color:"#1a6fc4"},
+  {id:"jardin",  name:"Appart Bas Jardin",  short:"Jardin",  color:"#0f7a5a"},
+  {id:"etage",   name:"Appart Étage",       short:"Étage",   color:"#c44a1a"},
+  {id:"bureau",  name:"Bureau",             short:"Bureau",  color:"#5a45b8"},
+];
+const MOIS = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
+const CACHE_KEY = "elec_jc_v4";
 
 const DEFAULTS = {
   locataires:{pizzeria:"Nicole Vidal",jardin:"Ana",etage:"Thomas / Sandy",bureau:"Emma"},
-  forfaits:{pizzeria:50,jardin:75,etage:100,bureau:0},
-  tarif:0.19,
+  forfaits:  {pizzeria:50,jardin:75,etage:100,bureau:0},
+  tarif: 0.19,
   releves:[
-    {date:"01/03/2025",pizzeria:4497.5,jardin:6527.47,etage:8378.97,bureau:1102.6},
-    {date:"01/04/2025",pizzeria:4929.53,jardin:7210.91,etage:9154.91,bureau:1118.53},
-    {date:"01/05/2025",pizzeria:5234.65,jardin:7701.43,etage:9900.0,bureau:1129.0},
-    {date:"01/06/2025",pizzeria:5511.36,jardin:8311.04,etage:10349.03,bureau:1141.11},
-    {date:"01/07/2025",pizzeria:5686.71,jardin:8589.22,etage:10609.55,bureau:1146.85},
-    {date:"01/08/2025",pizzeria:5848.46,jardin:8907.1,etage:10844.48,bureau:1150.92},
-    {date:"01/09/2025",pizzeria:6031.12,jardin:9291.89,etage:11628.25,bureau:1276.94},
-    {date:"01/10/2025",pizzeria:6304.01,jardin:9697.58,etage:12346.55,bureau:1410.87},
-    {date:"01/11/2025",pizzeria:6475.94,jardin:9919.4,etage:12714.47,bureau:1440.04},
-    {date:"01/12/2025",pizzeria:6627.34,jardin:10120.72,etage:12913.22,bureau:1473.98},
-    {date:"01/01/2026",pizzeria:6806.87,jardin:10345.19,etage:13276.33,bureau:1504.2},
-    {date:"01/02/2026",pizzeria:7174.31,jardin:10818.17,etage:14293.58,bureau:1542.88},
-    {date:"01/03/2026",pizzeria:7851.35,jardin:11767.6,etage:15920.24,bureau:1591.83},
-    {date:"01/04/2026",pizzeria:8219.76,jardin:12273.85,etage:16501.95,bureau:1618.22},
-    {date:"01/05/2026",pizzeria:8525.89,jardin:12769.62,etage:16914.85,bureau:1635.16},
+    {date:"01/03/2025",pizzeria:4497.5, jardin:6527.47, etage:8378.97,  bureau:1102.6},
+    {date:"01/04/2025",pizzeria:4929.53,jardin:7210.91, etage:9154.91,  bureau:1118.53},
+    {date:"01/05/2025",pizzeria:5234.65,jardin:7701.43, etage:9900.0,   bureau:1129.0},
+    {date:"01/06/2025",pizzeria:5511.36,jardin:8311.04, etage:10349.03, bureau:1141.11},
+    {date:"01/07/2025",pizzeria:5686.71,jardin:8589.22, etage:10609.55, bureau:1146.85},
+    {date:"01/08/2025",pizzeria:5848.46,jardin:8907.1,  etage:10844.48, bureau:1150.92},
+    {date:"01/09/2025",pizzeria:6031.12,jardin:9291.89, etage:11628.25, bureau:1276.94},
+    {date:"01/10/2025",pizzeria:6304.01,jardin:9697.58, etage:12346.55, bureau:1410.87},
+    {date:"01/11/2025",pizzeria:6475.94,jardin:9919.4,  etage:12714.47, bureau:1440.04},
+    {date:"01/12/2025",pizzeria:6627.34,jardin:10120.72,etage:12913.22, bureau:1473.98},
+    {date:"01/01/2026",pizzeria:6806.87,jardin:10345.19,etage:13276.33, bureau:1504.2},
+    {date:"01/02/2026",pizzeria:7174.31,jardin:10818.17,etage:14293.58, bureau:1542.88},
+    {date:"01/03/2026",pizzeria:7851.35,jardin:11767.6, etage:15920.24, bureau:1591.83},
+    {date:"01/04/2026",pizzeria:8219.76,jardin:12273.85,etage:16501.95, bureau:1618.22},
+    {date:"01/05/2026",pizzeria:8525.89,jardin:12769.62,etage:16914.85, bureau:1635.16},
   ]
 };
 
-const APTS=[
-  {id:"pizzeria",name:"Appart Bas Pizzeria",short:"Pizzeria",color:"#1a6fc4",cls:"color-p"},
-  {id:"jardin",  name:"Appart Bas Jardin",  short:"Jardin",  color:"#0f7a5a",cls:"color-j"},
-  {id:"etage",   name:"Appart Étage",       short:"Étage",   color:"#c44a1a",cls:"color-e"},
-  {id:"bureau",  name:"Bureau",             short:"Bureau",  color:"#5a45b8",cls:"color-b"},
-];
-window.APTS=APTS;
+// ════════════════════════════════════════════════════════════
+//  ÉTAT
+// ════════════════════════════════════════════════════════════
+let STATE = null;
+function S() { return STATE; }
 
-const syncEl=document.getElementById("sync");
-function syncOk(){syncEl.className="sync-badge sync-ok";syncEl.textContent="✅ Synchronisé";}
-function syncErr(){syncEl.className="sync-badge sync-err";syncEl.textContent="❌ Hors ligne";}
-function syncBusy(msg="Sauvegarde…"){syncEl.className="sync-badge sync-load";syncEl.innerHTML=`<span class="spinner"></span>${msg}`;}
-const CACHE_KEY="elec_jeancamp_v3";
-const TABS=["dashboard","annuel","releves","ajouter","locataires"];
-function refreshCurrent(){
-  const i=[...document.querySelectorAll(".tab")].findIndex(e=>e.classList.contains("active"));
-  render(TABS[i]||"dashboard");
+function setState(data) {
+  STATE = data;
+  localStorage.setItem(CACHE_KEY, JSON.stringify(STATE));
 }
-window.showTab=function(name){
-  document.querySelectorAll(".tab-content").forEach(e=>e.classList.remove("active"));
-  document.querySelectorAll(".tab").forEach((e,i)=>e.classList.toggle("active",TABS[i]===name));
-  document.getElementById("tab-"+name).classList.add("active");
-  render(name);
-};
 
-// 1) Affichage immédiat depuis le cache localStorage
-const cached=localStorage.getItem(CACHE_KEY);
-if(cached){try{window._S=JSON.parse(cached);}catch(e){}}
-if(!window._S) window._S=JSON.parse(JSON.stringify(DEFAULTS));
-refreshCurrent();
+// ════════════════════════════════════════════════════════════
+//  SYNC
+// ════════════════════════════════════════════════════════════
+const syncEl = document.getElementById("sync");
+function syncOk()  { syncEl.className="sync ok";  syncEl.textContent="✅ Synchronisé"; }
+function syncErr() { syncEl.className="sync err"; syncEl.textContent="❌ Hors ligne"; }
+function syncBusy(msg){ syncEl.className="sync busy"; syncEl.innerHTML='<span class="spin"></span>'+(msg||"Sauvegarde…"); }
 
-// 2) Chargement JSONBin en arrière-plan (~200ms)
-syncBusy("Chargement…");
-fetch(BIN_URL+"/latest",{headers:{"X-Master-Key":API_KEY}})
-  .then(r=>r.json())
-  .then(data=>{
-    const rec=data.record;
-    // Si le bin contient juste {"init":true} on pousse les DEFAULTS
-    if(!rec||rec.init){
-      return fetch(BIN_URL,{method:"PUT",headers:HEADERS,body:JSON.stringify(window._S)}).then(()=>{});
+async function charger() {
+  syncBusy("Chargement…");
+  try {
+    const r = await fetch(BIN_URL+"/latest", {headers:{"X-Master-Key":API_KEY}});
+    if (!r.ok) throw new Error("HTTP "+r.status);
+    const data = await r.json();
+    const rec = data.record;
+    if (!rec || rec.init) {
+      // Bin vide : on pousse les données par défaut
+      await sauvegarder(STATE || JSON.parse(JSON.stringify(DEFAULTS)));
+    } else {
+      setState(rec);
+      syncOk();
+      refreshCurrent();
     }
-    window._S=rec;
-    localStorage.setItem(CACHE_KEY,JSON.stringify(window._S));
-    syncOk();
+  } catch(e) {
+    console.error("JSONBin load error:", e);
+    syncErr();
+    // On reste sur le cache si dispo
+    if (!STATE) setState(JSON.parse(JSON.stringify(DEFAULTS)));
     refreshCurrent();
-  })
-  .catch(e=>{console.error(e);syncErr();});
+  }
+}
 
-// Sauvegarde JSONBin + cache local
-window.save=async function(){
+async function sauvegarder(data) {
+  if (data) setState(data);
   syncBusy();
-  try{
-    const r=await fetch(BIN_URL,{method:"PUT",headers:HEADERS,body:JSON.stringify(window._S)});
-    if(!r.ok) throw new Error("HTTP "+r.status);
-    localStorage.setItem(CACHE_KEY,JSON.stringify(window._S));
+  try {
+    const r = await fetch(BIN_URL, {method:"PUT", headers:HDRS, body:JSON.stringify(STATE)});
+    if (!r.ok) throw new Error("HTTP "+r.status);
     syncOk();
-  }catch(e){
+  } catch(e) {
+    console.error("JSONBin save error:", e);
     syncErr();
     alert("Erreur sauvegarde : "+e.message);
   }
+}
+window.save = () => sauvegarder();
+
+// ════════════════════════════════════════════════════════════
+//  ROUTING
+// ════════════════════════════════════════════════════════════
+const TABS = ["dashboard","annuel","releves","ajouter","locataires"];
+
+function render(name) {
+  if      (name==="dashboard")  renderDashboard();
+  else if (name==="annuel")     renderAnnuel();
+  else if (name==="releves")    renderReleves();
+  else if (name==="ajouter")    renderAjouter();
+  else if (name==="locataires") renderLocataires();
+}
+
+function refreshCurrent() {
+  const i = [...document.querySelectorAll(".tab")].findIndex(e=>e.classList.contains("active"));
+  render(TABS[i] || "dashboard");
+}
+
+window.showTab = function(name) {
+  document.querySelectorAll(".pane").forEach(e=>e.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach((e,i)=>e.classList.toggle("active", TABS[i]===name));
+  document.getElementById("pane-"+name).classList.add("active");
+  render(name);
 };
 
-const S=()=>window._S;
-const MOIS=["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
-function getYear(s){return s.split("/")[2];}
-function getYears(){return[...new Set(S().releves.map(r=>getYear(r.date)))].sort();}
+// ════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════
+function getYear(s)  { return s.split("/")[2]; }
+function getYears()  { return [...new Set(S().releves.map(r=>getYear(r.date)))].sort(); }
 function sortDate(a,b){
-  const f=s=>{const[d,m,y]=s.split("/");return new Date(+y,+m-1,+d);};
-  return f(a.date)-f(b.date);
+  const p=s=>{const[d,m,y]=s.split("/");return new Date(+y,+m-1,+d);};
+  return p(a.date)-p(b.date);
 }
-function calcDiffs(releves){
-  const r=[];
+function calcDiffs(releves) {
+  const res=[];
   for(let i=1;i<releves.length;i++){
-    const cur=releves[i],prv=releves[i-1],row={date:cur.date};
+    const cur=releves[i], prv=releves[i-1], row={date:cur.date};
     APTS.forEach(a=>{
-      row[a.id+"_rel"]=cur[a.id];
-      row[a.id+"_diff"]=cur[a.id]!=null&&prv[a.id]!=null?+(cur[a.id]-prv[a.id]).toFixed(2):null;
-      row[a.id+"_prix"]=row[a.id+"_diff"]!=null?+(row[a.id+"_diff"]*S().tarif).toFixed(2):null;
+      row[a.id+"_rel"]  = cur[a.id];
+      row[a.id+"_diff"] = (cur[a.id]!=null&&prv[a.id]!=null) ? +(cur[a.id]-prv[a.id]).toFixed(2) : null;
+      row[a.id+"_prix"] = row[a.id+"_diff"]!=null ? +(row[a.id+"_diff"]*S().tarif).toFixed(2) : null;
     });
-    r.push(row);
+    res.push(row);
   }
-  return r;
+  return res;
+}
+function badgeDiff(d){ return d>400?"berr":d>200?"bwarn":"bok"; }
+function colorBal(b){ return b>=0?"var(--ok)":"var(--err)"; }
+function fmtBal(b){ return (b>=0?"+":"")+b.toFixed(2); }
+function dateLabel(dateStr){
+  const[d,m,y]=dateStr.split("/");
+  return `${MOIS[+m-1]} ${y}<br><span style="font-size:10px;color:var(--text3)">relevé le ${d}/${m}</span>`;
 }
 
-// ── DASHBOARD ──────────────────────────────────────────────
-function renderDashboard(){
-  const diffs=calcDiffs(S().releves);
-  if(!diffs.length){document.getElementById("tab-dashboard").innerHTML='<p style="color:var(--text2);padding:1rem;">Pas assez de relevés.</p>';return;}
-  const last=diffs[diffs.length-1];
-  const totD=APTS.reduce((a,b)=>a+(last[b.id+"_diff"]||0),0);
-  const totP=APTS.reduce((a,b)=>a+(last[b.id+"_prix"]||0),0);
-  const maxD=Math.max(...APTS.map(a=>last[a.id+"_diff"]||0));
+// ════════════════════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════════════════════
+function renderDashboard() {
+  const diffs = calcDiffs(S().releves);
+  if (!diffs.length) { document.getElementById("pane-dashboard").innerHTML='<p style="color:var(--text2);padding:1rem">Pas assez de relevés.</p>'; return; }
+  const last = diffs[diffs.length-1];
+  const totD = APTS.reduce((a,b)=>a+(last[b.id+"_diff"]||0),0);
+  const totP = APTS.reduce((a,b)=>a+(last[b.id+"_prix"]||0),0);
+  const maxD = Math.max(...APTS.map(a=>last[a.id+"_diff"]||0));
 
-  let h=`<div class="stats-grid">
-    <div class="stat"><div class="stat-label">Dernier relevé</div><div class="stat-value" style="font-size:15px;">${last.date}</div></div>
-    <div class="stat"><div class="stat-label">Conso mois</div><div class="stat-value">${totD.toFixed(0)}<span style="font-size:12px;font-weight:400"> kWh</span></div></div>
-    <div class="stat"><div class="stat-label">Coût mois</div><div class="stat-value">${totP.toFixed(0)}<span style="font-size:12px;font-weight:400"> €</span></div></div>
+  let h = `<div class="sgrid">
+    <div class="stat"><div class="slabel">Dernier relevé</div><div class="sval" style="font-size:15px">${last.date}</div></div>
+    <div class="stat"><div class="slabel">Conso mois</div><div class="sval">${totD.toFixed(0)}<span style="font-size:12px;font-weight:400"> kWh</span></div></div>
+    <div class="stat"><div class="slabel">Coût mois</div><div class="sval">${totP.toFixed(0)}<span style="font-size:12px;font-weight:400"> €</span></div></div>
     <div class="stat">
-      <div class="stat-label">⚡ Tarif kWh</div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+      <div class="slabel">⚡ Tarif kWh</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
         <input id="db-tarif" type="number" step="0.001" value="${S().tarif}"
-          style="width:80px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:5px 7px;font-size:16px;font-weight:600;color:var(--text);font-family:inherit;outline:none;"
-          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border2)'"
-          onkeydown="if(event.key==='Enter') appliquerTarif()" />
-        <span style="font-size:12px;color:var(--text2);">€</span>
-        <button onclick="appliquerTarif()" style="padding:5px 10px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;">OK</button>
+          style="width:75px;background:var(--surface2);border:.5px solid var(--border2);border-radius:var(--rsm);padding:5px 7px;font-size:16px;font-weight:600;color:var(--text);font-family:inherit;outline:none"
+          onkeydown="if(event.key==='Enter')appliquerTarif()"/>
+        <span style="font-size:12px;color:var(--text2)">€</span>
+        <button onclick="appliquerTarif()" style="padding:5px 10px;background:var(--blue);color:#fff;border:none;border-radius:var(--rsm);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">OK</button>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px;">soit ${(S().tarif*100).toFixed(2)} c€/kWh</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">soit ${(S().tarif*100).toFixed(2)} c€/kWh</div>
     </div>
   </div>`;
 
-  h+=`<div class="card"><div class="card-title">📊 Consommation — dernier mois</div>`;
+  h += `<div class="card"><div class="ctitle">📊 Consommation — dernier mois</div>`;
   APTS.forEach(a=>{
-    const d=last[a.id+"_diff"]||0,p=last[a.id+"_prix"]||0;
-    h+=`<div class="bar-row">
-      <span class="bar-label">${a.short}</span>
+    const d=last[a.id+"_diff"]||0, p=last[a.id+"_prix"]||0;
+    h += `<div class="bar-row">
+      <span class="bar-lbl">${a.short}</span>
       <div class="bar-track"><div class="bar-fill" style="width:${maxD>0?(d/maxD*100).toFixed(0):0}%;background:${a.color}"></div></div>
       <span class="bar-val">${d.toFixed(0)} kWh</span>
-      <span class="badge ${d>400?"badge-danger":d>200?"badge-warn":"badge-ok"}">${p.toFixed(0)} €</span>
+      <span class="badge ${badgeDiff(d)}">${p.toFixed(0)} €</span>
     </div>`;
   });
-  h+=`</div>`;
+  h += `</div>`;
 
-  h+=`<div class="card-title" style="margin-bottom:10px;">💳 Balance forfait vs réel (dernier mois)</div><div class="balance-grid">`;
+  h += `<div class="ctitle" style="margin-bottom:10px">💳 Balance forfait vs réel (dernier mois)</div><div class="bgrid">`;
   APTS.forEach(a=>{
-    const forf=S().forfaits[a.id]||0,reel=last[a.id+"_prix"]||0,bal=+(forf-reel).toFixed(2);
-    h+=`<div class="balance-card">
-      <div class="balance-name ${a.cls}">${a.short}</div>
-      <div class="balance-row"><span>Forfait</span><span>${forf} €</span></div>
-      <div class="balance-row"><span>Consommé</span><span>${reel.toFixed(2)} €</span></div>
-      <div class="balance-total" style="color:${bal>=0?"var(--success)":"var(--danger)"};">${bal>=0?"+":""}${bal.toFixed(2)} €</div>
+    const forf=S().forfaits[a.id]||0, reel=last[a.id+"_prix"]||0, bal=+(forf-reel).toFixed(2);
+    h += `<div class="bcard">
+      <div class="bcard-name" style="color:${a.color}">${a.short}</div>
+      <div class="bcard-row"><span>Forfait</span><span>${forf} €</span></div>
+      <div class="bcard-row"><span>Consommé</span><span>${reel.toFixed(2)} €</span></div>
+      <div class="bcard-tot" style="color:${colorBal(bal)}">${fmtBal(bal)} €</div>
     </div>`;
   });
-  h+=`</div>`;
+  h += `</div>`;
 
-  getAlertes().forEach(a=>h+=`<div class="${a.l}-box">⚠️ ${a.m}</div>`);
-  document.getElementById("tab-dashboard").innerHTML=h;
+  getAlertes().forEach(a=> h+=`<div class="abox ${a.l}">⚠️ ${a.m}</div>`);
+  document.getElementById("pane-dashboard").innerHTML = h;
 }
 
-window.appliquerTarif=async function(){
-  const v=parseFloat(document.getElementById("db-tarif").value);
+window.appliquerTarif = async function(){
+  const v = parseFloat(document.getElementById("db-tarif").value);
   if(isNaN(v)||v<=0){alert("Tarif invalide.");return;}
-  S().tarif=v;
-  await window.save();
+  S().tarif = v;
+  await sauvegarder();
   renderDashboard();
 };
 
-// ── VUE ANNUELLE ───────────────────────────────────────────
-let selYear=null;
-function renderAnnuel(){
-  const years=getYears();
+// ════════════════════════════════════════════════════════════
+//  VUE ANNUELLE
+// ════════════════════════════════════════════════════════════
+let selYear = null;
+window.renderAnnuel = renderAnnuel;
+function renderAnnuel() {
+  const years = getYears();
   if(!selYear||!years.includes(selYear)) selYear=years[years.length-1];
-  const diffs=calcDiffs(S().releves);
-  let h=`<div class="year-selector">`;
-  years.forEach(y=>h+=`<button class="year-btn ${y===selYear?"active":""}" onclick="selYear='${y}';renderAnnuel()">${y}</button>`);
-  h+=`</div>`;
-  const annee=diffs.filter(d=>getYear(d.date)===selYear);
+  const diffs = calcDiffs(S().releves);
 
+  let h = `<div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">`;
+  years.forEach(y=> h+=`<button class="ybtn ${y===selYear?"active":""}" onclick="selYear='${y}';renderAnnuel()">${y}</button>`);
+  h += `</div>`;
+
+  const annee = diffs.filter(d=>getYear(d.date)===selYear);
   APTS.forEach(a=>{
-    const total=annee.reduce((s,d)=>s+(d[a.id+"_diff"]||0),0);
-    const totalP=+(total*S().tarif).toFixed(2);
-    const forfT=(S().forfaits[a.id]||0)*annee.length;
-    const bal=+(forfT-totalP).toFixed(2);
-    const rest=12-annee.length;
-    const moy=annee.length>0?total/annee.length:0;
-    const projKwh=+(total+moy*rest).toFixed(0);
-    const projP=+(projKwh*S().tarif).toFixed(2);
-    const projForf=(S().forfaits[a.id]||0)*12;
-    const projBal=+(projForf-projP).toFixed(2);
-    const lastMois=annee.length>0?+annee[annee.length-1].date.split("/")[1]:0;
+    const total  = annee.reduce((s,d)=>s+(d[a.id+"_diff"]||0),0);
+    const totalP = +(total*S().tarif).toFixed(2);
+    const forfT  = (S().forfaits[a.id]||0)*annee.length;
+    const bal    = +(forfT-totalP).toFixed(2);
+    const rest   = 12-annee.length;
+    const moy    = annee.length>0 ? total/annee.length : 0;
+    const pKwh   = +(total+moy*rest).toFixed(0);
+    const pP     = +(pKwh*S().tarif).toFixed(2);
+    const pForf  = (S().forfaits[a.id]||0)*12;
+    const pBal   = +(pForf-pP).toFixed(2);
+    const lastM  = annee.length>0 ? +annee[annee.length-1].date.split("/")[1] : 0;
 
-    h+=`<div class="card"><div class="card-title" style="color:${a.color}">${a.name} <span style="font-size:12px;font-weight:400;color:var(--text2)">— ${S().locataires[a.id]||"—"} · ${S().forfaits[a.id]||0} €/mois</span></div>`;
-    if(rest>0&&projBal<0) h+=`<div class="err-box">⚠️ Dépassement estimé : <strong>${Math.abs(projBal).toFixed(0)} €</strong> de régularisation probable sur ${selYear}.</div>`;
-    else if(rest>0&&projBal<50&&projBal>=0) h+=`<div class="warn-box">⚡ Marge faible : ${projBal.toFixed(0)} € d'excédent estimé sur l'année.</div>`;
+    h += `<div class="card"><div class="ctitle" style="color:${a.color}">${a.name}
+      <span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${S().locataires[a.id]||"—"} · ${S().forfaits[a.id]||0} €/mois</span></div>`;
+    if(rest>0&&pBal<0)       h+=`<div class="abox err">⚠️ Dépassement estimé : <strong>${Math.abs(pBal).toFixed(0)} €</strong> de régularisation probable sur ${selYear}.</div>`;
+    else if(rest>0&&pBal<50) h+=`<div class="abox warn">⚡ Marge faible : ${pBal.toFixed(0)} € d'excédent estimé sur l'année.</div>`;
 
-    h+=`<table><thead><tr><th>Mois</th><th>Relevé</th><th>kWh</th><th>Coût €</th><th>Forfait</th><th>Balance</th></tr></thead><tbody>`;
+    h += `<table><thead><tr><th>Mois</th><th>Relevé</th><th>kWh</th><th>Coût €</th><th>Forfait</th><th>Balance</th></tr></thead><tbody>`;
     annee.forEach(d=>{
-      const df=d[a.id+"_diff"],px=d[a.id+"_prix"];
+      const df=d[a.id+"_diff"], px=d[a.id+"_prix"];
       const b=df!=null?+((S().forfaits[a.id]||0)-px).toFixed(2):null;
-      const mi=+d.date.split("/")[1]-1;
-      const jourReleve=d.date.split("/")[0];
-      h+=`<tr><td>${MOIS[mi]} ${d.date.split("/")[2]}<br><span style="font-size:10px;color:var(--text3)">relevé le ${jourReleve}/${String(mi+1).padStart(2,"0")}</span></td>
+      h+=`<tr><td>${dateLabel(d.date)}</td>
         <td>${d[a.id+"_rel"]!=null?d[a.id+"_rel"].toFixed(1):"—"}</td>
-        <td>${df!=null?`<span class="badge ${df>400?"badge-danger":df>200?"badge-warn":"badge-ok"}">${df.toFixed(0)}</span>`:"—"}</td>
+        <td>${df!=null?`<span class="badge ${badgeDiff(df)}">${df.toFixed(0)}</span>`:"—"}</td>
         <td>${px!=null?px.toFixed(2):"—"}</td>
         <td>${S().forfaits[a.id]||0}</td>
-        <td style="color:${b!=null?(b>=0?"var(--success)":"var(--danger)"):"var(--text2)"};">${b!=null?(b>=0?"+":"")+b.toFixed(2):"—"}</td></tr>`;
+        <td style="color:${b!=null?colorBal(b):"var(--text2)"};">${b!=null?fmtBal(b):"—"}</td></tr>`;
     });
     if(rest>0){
       for(let i=1;i<=rest;i++){
-        const mi=(lastMois+i)%12;
+        const mi=(lastM+i)%12;
         const pp=+(moy*S().tarif).toFixed(2);
         const pb=+((S().forfaits[a.id]||0)-pp).toFixed(2);
         h+=`<tr class="proj${pb<0?" alerte":""}"><td>${MOIS[mi]} ${selYear} ✦</td><td>—</td>
           <td>${moy.toFixed(0)}</td><td>${pp.toFixed(2)}</td>
           <td>${S().forfaits[a.id]||0}</td>
-          <td style="color:${pb>=0?"var(--success)":"var(--danger)"};">${pb>=0?"+":""}${pb.toFixed(2)}</td></tr>`;
+          <td style="color:${colorBal(pb)}">${fmtBal(pb)}</td></tr>`;
       }
     }
-    h+=`<tr class="total"><td>Total réel (${annee.length} mois)</td><td>—</td><td>${total.toFixed(0)}</td><td>${totalP.toFixed(2)}</td><td>${forfT.toFixed(0)}</td>
-      <td style="color:${bal>=0?"var(--success)":"var(--danger)"};">${bal>=0?"+":""}${bal.toFixed(2)}</td></tr>`;
-    if(rest>0) h+=`<tr class="total" style="opacity:.7"><td>Projection ✦</td><td>—</td><td>${projKwh}</td><td>${projP.toFixed(2)}</td><td>${projForf}</td>
-      <td style="color:${projBal>=0?"var(--success)":"var(--danger)"};">${projBal>=0?"+":""}${projBal.toFixed(2)}</td></tr>`;
-    h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection = moyenne mensuelle de ${selYear}</p></div>`;
+    h+=`<tr class="tot"><td>Total réel (${annee.length} mois)</td><td>—</td><td>${total.toFixed(0)}</td><td>${totalP.toFixed(2)}</td><td>${forfT.toFixed(0)}</td>
+      <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td></tr>`;
+    if(rest>0) h+=`<tr class="tot" style="opacity:.7"><td>Projection ✦</td><td>—</td><td>${pKwh}</td><td>${pP.toFixed(2)}</td><td>${pForf}</td>
+      <td style="color:${colorBal(pBal)}">${fmtBal(pBal)}</td></tr>`;
+    h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection = moyenne mensuelle ${selYear}</p></div>`;
   });
-  document.getElementById("tab-annuel").innerHTML=h;
+  document.getElementById("pane-annuel").innerHTML = h;
 }
-window.selYear=selYear;
-window.renderAnnuel=renderAnnuel;
 
-// ── ALERTES ────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+//  ALERTES
+// ════════════════════════════════════════════════════════════
 function getAlertes(){
   const al=[];
   const diffs=calcDiffs(S().releves);
   getYears().forEach(y=>{
     const an=diffs.filter(d=>getYear(d.date)===y);
-    const rest=12-an.length;
-    if(rest<=0) return;
+    const rest=12-an.length; if(rest<=0) return;
     APTS.forEach(a=>{
       const tot=an.reduce((s,d)=>s+(d[a.id+"_diff"]||0),0);
       const moy=an.length>0?tot/an.length:0;
@@ -390,123 +420,135 @@ function getAlertes(){
   return al;
 }
 
-// ── RELEVÉS ────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+//  RELEVÉS
+// ════════════════════════════════════════════════════════════
 function renderReleves(){
   const diffs=calcDiffs(S().releves);
   let h="";
   APTS.forEach(a=>{
     const tot=diffs.reduce((s,d)=>s+(d[a.id+"_diff"]||0),0);
     const totP=+(tot*S().tarif).toFixed(2);
-    h+=`<div class="card"><div class="card-title ${a.cls}">${a.name}
+    h+=`<div class="card"><div class="ctitle" style="color:${a.color}">${a.name}
       <span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${S().locataires[a.id]||"—"}</span>
-      ${S().forfaits[a.id]?`<span class="badge badge-ok" style="margin-left:6px">${S().forfaits[a.id]} €/mois</span>`:""}
+      ${S().forfaits[a.id]?`<span class="badge bok" style="margin-left:6px">${S().forfaits[a.id]} €/mois</span>`:""}
     </div>
-    <table><thead><tr><th>Date</th><th>Relevé</th><th>kWh</th><th>Coût €</th><th>Forfait</th><th>Balance</th></tr></thead><tbody>`;
+    <table><thead><tr><th>Mois</th><th>Relevé</th><th>kWh</th><th>Coût €</th><th>Forfait</th><th>Balance</th></tr></thead><tbody>`;
     diffs.forEach(d=>{
       const df=d[a.id+"_diff"],px=d[a.id+"_prix"];
       const b=df!=null?+((S().forfaits[a.id]||0)-px).toFixed(2):null;
-      const mi=+d.date.split("/")[1]-1;
-      const jourReleve=d.date.split("/")[0];
-      h+=`<tr><td>${MOIS[mi]} ${d.date.split("/")[2]}<br><span style="font-size:10px;color:var(--text3)">relevé le ${jourReleve}/${String(mi+1).padStart(2,"0")}</span></td>
+      h+=`<tr><td>${dateLabel(d.date)}</td>
         <td>${d[a.id+"_rel"]!=null?d[a.id+"_rel"].toFixed(1):"—"}</td>
-        <td>${df!=null?`<span class="badge ${df>400?"badge-danger":df>200?"badge-warn":"badge-ok"}">${df.toFixed(0)}</span>`:"—"}</td>
+        <td>${df!=null?`<span class="badge ${badgeDiff(df)}">${df.toFixed(0)}</span>`:"—"}</td>
         <td>${px!=null?px.toFixed(2):"—"}</td>
         <td>${S().forfaits[a.id]||0}</td>
-        <td style="color:${b!=null?(b>=0?"var(--success)":"var(--danger)"):"var(--text2)"};">${b!=null?(b>=0?"+":"")+b.toFixed(2):"—"}</td></tr>`;
+        <td style="color:${b!=null?colorBal(b):"var(--text2)"};">${b!=null?fmtBal(b):"—"}</td></tr>`;
     });
-    h+=`<tr class="total"><td colspan="2">Total (${diffs.length} mois)</td><td>${tot.toFixed(0)}</td><td>${totP.toFixed(2)}</td><td colspan="2"></td></tr>
+    h+=`<tr class="tot"><td colspan="2">Total (${diffs.length} mois)</td><td>${tot.toFixed(0)}</td><td>${totP.toFixed(2)}</td><td colspan="2"></td></tr>
     </tbody></table></div>`;
   });
-  document.getElementById("tab-releves").innerHTML=h;
+  document.getElementById("pane-releves").innerHTML=h;
 }
 
-// ── AJOUTER ────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+//  AJOUTER
+// ════════════════════════════════════════════════════════════
 function renderAjouter(){
   const last=S().releves[S().releves.length-1];
-  let h=`<div class="card"><div class="card-title">➕ Nouveau relevé</div>
-    <div class="fg-grid">
-      <div class="form-group"><label>Date du relevé</label><input type="date" id="f-date"/></div>
-      <div class="form-group"><label>Tarif kWh (€)</label><input type="number" id="f-tarif" step="0.001" value="${S().tarif}"/></div>
+  let h=`<div class="card"><div class="ctitle">➕ Nouveau relevé</div>
+    <div class="fgrid">
+      <div class="fg"><label>Date du relevé</label><input type="date" id="f-date"/></div>
+      <div class="fg"><label>Tarif kWh (€)</label><input type="number" id="f-tarif" step="0.001" value="${S().tarif}"/></div>
     </div>
-    <div class="fg-grid">`;
+    <div class="fgrid">`;
   APTS.forEach(a=>{
-    h+=`<div class="form-group"><label style="color:${a.color}">${a.short} — dernier : ${last?last[a.id]:""}</label>
+    h+=`<div class="fg"><label style="color:${a.color}">${a.short} — dernier : ${last?last[a.id]:""}</label>
       <input type="number" id="f-${a.id}" placeholder="kWh compteur" step="0.01"/></div>`;
   });
-  h+=`</div><button class="btn btn-primary" onclick="ajouterReleve()">💾 Enregistrer</button></div>`;
+  h+=`</div><button class="btn btn-p" style="margin-top:4px" onclick="ajouterReleve()">💾 Enregistrer</button></div>`;
 
-  h+=`<div class="card"><div class="card-title">📋 Historique brut</div><div style="overflow-x:auto">
+  h+=`<div class="card"><div class="ctitle">📋 Historique brut</div><div style="overflow-x:auto">
     <table><thead><tr><th>Date</th>${APTS.map(a=>`<th>${a.short}</th>`).join("")}<th></th></tr></thead><tbody>`;
   S().releves.forEach((r,i)=>{
     h+=`<tr><td>${r.date}</td>${APTS.map(a=>`<td>${r[a.id]??""}</td>`).join("")}
       <td><button class="btn-del" onclick="supprimerReleve(${i})">🗑</button></td></tr>`;
   });
   h+=`</tbody></table></div></div>`;
-  document.getElementById("tab-ajouter").innerHTML=h;
+  document.getElementById("pane-ajouter").innerHTML=h;
   document.getElementById("f-date").valueAsDate=new Date();
 }
-window.ajouterReleve=async function(){
+
+window.ajouterReleve = async function(){
   const dv=document.getElementById("f-date").value;
   if(!dv){alert("Saisir une date.");return;}
   const[y,m,d]=dv.split("-");
-  const ds=`${d}/${m}/${y}`;
-  const nr={date:ds};
+  const nr={date:`${d}/${m}/${y}`};
   let ok=true;
-  APTS.forEach(a=>{const v=parseFloat(document.getElementById("f-"+a.id).value);if(isNaN(v))ok=false;nr[a.id]=isNaN(v)?null:v;});
+  APTS.forEach(a=>{
+    const v=parseFloat(document.getElementById("f-"+a.id).value);
+    if(isNaN(v)) ok=false;
+    nr[a.id]=isNaN(v)?null:v;
+  });
   if(!ok){alert("Saisir tous les relevés.");return;}
   const tv=parseFloat(document.getElementById("f-tarif").value);
   if(!isNaN(tv)&&tv>0) S().tarif=tv;
   S().releves.push(nr);
   S().releves.sort(sortDate);
-  await window.save();
+  await sauvegarder();
   renderAjouter();
   alert("✅ Relevé enregistré !");
 };
-window.supprimerReleve=async function(i){
+
+window.supprimerReleve = async function(i){
   if(!confirm("Supprimer ?")) return;
   S().releves.splice(i,1);
-  await window.save();
+  await sauvegarder();
   renderAjouter();
 };
 
-// ── LOCATAIRES ─────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+//  LOCATAIRES
+// ════════════════════════════════════════════════════════════
 function renderLocataires(){
-  let h=`<div class="card"><div class="card-title">👤 Locataires & forfaits</div>
+  let h=`<div class="card"><div class="ctitle">👤 Locataires & forfaits</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px">`;
   APTS.forEach(a=>{
-    h+=`<div class="card" style="margin-bottom:0;border:0.5px solid ${a.color}44">
-      <div class="card-title ${a.cls}" style="margin-bottom:10px">${a.short}</div>
-      <div class="form-group"><label>Locataire</label><input type="text" id="loc-${a.id}" value="${S().locataires[a.id]||""}"/></div>
-      <div class="form-group"><label>Forfait mensuel (€)</label><input type="number" id="forf-${a.id}" value="${S().forfaits[a.id]||0}" min="0" step="5"/></div>
+    h+=`<div class="card" style="margin-bottom:0;border:.5px solid ${a.color}44">
+      <div class="ctitle" style="color:${a.color};margin-bottom:10px">${a.short}</div>
+      <div class="fg"><label>Locataire</label><input type="text" id="loc-${a.id}" value="${S().locataires[a.id]||""}"/></div>
+      <div class="fg"><label>Forfait mensuel (€)</label><input type="number" id="forf-${a.id}" value="${S().forfaits[a.id]||0}" min="0" step="5"/></div>
     </div>`;
   });
   h+=`</div>
-    <div class="form-group" style="margin-top:14px;max-width:220px"><label>Tarif kWh (€)</label>
+    <div class="fg" style="margin-top:14px;max-width:220px"><label>Tarif kWh (€)</label>
       <input type="number" id="loc-tarif" step="0.001" value="${S().tarif}"/></div>
-    <button class="btn btn-primary" style="margin-top:4px" onclick="sauvegarderLocataires()">💾 Sauvegarder</button>
+    <button class="btn btn-p" style="margin-top:4px" onclick="sauvegarderLocataires()">💾 Sauvegarder</button>
   </div>`;
-  document.getElementById("tab-locataires").innerHTML=h;
+  document.getElementById("pane-locataires").innerHTML=h;
 }
-window.sauvegarderLocataires=async function(){
+
+window.sauvegarderLocataires = async function(){
   APTS.forEach(a=>{
     S().locataires[a.id]=document.getElementById("loc-"+a.id).value;
     S().forfaits[a.id]=parseFloat(document.getElementById("forf-"+a.id).value)||0;
   });
   const t=parseFloat(document.getElementById("loc-tarif").value);
   if(!isNaN(t)&&t>0) S().tarif=t;
-  await window.save();
+  await sauvegarder();
   alert("✅ Sauvegardé !");
   renderDashboard();
 };
 
-// ── RENDER ─────────────────────────────────────────────────
-function render(name){
-  if(name==="dashboard") renderDashboard();
-  else if(name==="annuel") renderAnnuel();
-  else if(name==="releves") renderReleves();
-  else if(name==="ajouter") renderAjouter();
-  else if(name==="locataires") renderLocataires();
-}
+// ════════════════════════════════════════════════════════════
+//  INIT — cache d'abord, JSONBin ensuite
+// ════════════════════════════════════════════════════════════
+(function init(){
+  const cached = localStorage.getItem(CACHE_KEY);
+  if(cached){ try{ STATE=JSON.parse(cached); }catch(e){} }
+  if(!STATE) STATE = JSON.parse(JSON.stringify(DEFAULTS));
+  render("dashboard"); // affichage immédiat
+  charger();           // mise à jour depuis JSONBin
+})();
 </script>
 </body>
 </html>
