@@ -3,257 +3,303 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Suivi Électricité — Jean Camp</title>
+<title>Suivi Jean Camp</title>
 <style>
 :root{
-  --bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;
-  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+  --bg:#f5f4f0;--surf:#fff;--surf2:#f0efe9;--surf3:#e8e7e0;
+  --border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.16);
   --text:#1a1a18;--text2:#5a5955;--text3:#9a9890;
-  --blue:#1a6fc4;--green:#0f7a5a;--orange:#c44a1a;--purple:#5a45b8;
-  --ok-bg:#e0f4ed;--ok:#0f7a5a;
-  --warn-bg:#fef3e2;--warn:#b06010;
-  --err-bg:#fdeaea;--err:#b02020;
-  --radius:10px;--rsm:6px;
+  --blue:#1a6fc4;--green:#0f7a5a;--orange:#c44a1a;--purple:#5a45b8;--teal:#0a8080;
+  --ok:#0f7a5a;--ok-bg:#e0f4ed;
+  --warn:#b06010;--warn-bg:#fef3e2;
+  --err:#b02020;--err-bg:#fdeaea;
+  --r:10px;--rsm:6px;
 }
 @media(prefers-color-scheme:dark){:root{
-  --bg:#1a1a18;--surface:#242422;--surface2:#2e2e2a;
-  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.18);
+  --bg:#1a1a18;--surf:#242422;--surf2:#2e2e2a;--surf3:#383832;
+  --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
   --text:#f0efe9;--text2:#a8a7a0;--text3:#68675f;
-  --blue:#5aabf0;--green:#3acfa0;--orange:#f0844a;--purple:#9a8af0;
-  --ok-bg:#083325;--ok:#3acfa0;
-  --warn-bg:#3a2005;--warn:#e09040;
-  --err-bg:#3a0a0a;--err:#f06060;
+  --blue:#5aabf0;--green:#3acfa0;--orange:#f0844a;--purple:#9a8af0;--teal:#3acfcf;
+  --ok:#3acfa0;--ok-bg:#083325;
+  --warn:#e09040;--warn-bg:#3a2005;
+  --err:#f06060;--err-bg:#3a0a0a;
 }}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
-.app{max-width:880px;margin:0 auto;padding:1rem;}
-.header{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;padding:16px 20px;background:var(--surface);border-radius:var(--radius);border:.5px solid var(--border);}
-.header h1{font-size:18px;font-weight:600;}
-.header p{font-size:12px;color:var(--text2);margin-top:2px;}
+.app{max-width:900px;margin:0 auto;padding:1rem;}
+.hdr{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;padding:14px 18px;background:var(--surf);border-radius:var(--r);border:.5px solid var(--border);}
+.hdr h1{font-size:17px;font-weight:600;}
+.hdr p{font-size:11px;color:var(--text2);margin-top:2px;}
 .sync{margin-left:auto;font-size:11px;padding:4px 10px;border-radius:20px;border:.5px solid var(--border2);white-space:nowrap;}
 .sync.ok{background:var(--ok-bg);color:var(--ok);}
 .sync.err{background:var(--err-bg);color:var(--err);}
-.sync.busy{background:var(--surface2);color:var(--text2);}
-.tabs{display:flex;gap:4px;margin-bottom:1.25rem;background:var(--surface2);border-radius:var(--radius);padding:4px;flex-wrap:wrap;}
-.tab{flex:1;min-width:80px;padding:8px 6px;font-size:12px;cursor:pointer;border:none;background:none;color:var(--text2);border-radius:var(--rsm);font-family:inherit;text-align:center;}
-.tab.active{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.12);}
+.sync.busy{background:var(--surf2);color:var(--text2);}
+.tabs{display:flex;gap:4px;background:var(--surf2);border-radius:var(--r);padding:4px;flex-wrap:wrap;margin-bottom:1.25rem;}
+.tab{flex:1;min-width:70px;padding:8px 6px;font-size:12px;cursor:pointer;border:none;background:none;color:var(--text2);border-radius:var(--rsm);font-family:inherit;text-align:center;}
+.tab.active{background:var(--surf);color:var(--text);font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.subtabs{display:flex;gap:4px;background:var(--surf3);border-radius:var(--rsm);padding:3px;margin-bottom:1rem;}
+.subtab{flex:1;padding:6px 8px;font-size:12px;cursor:pointer;border:none;background:none;color:var(--text2);border-radius:4px;font-family:inherit;text-align:center;}
+.subtab.active{background:var(--surf);color:var(--text);font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.08);}
 .pane{display:none;}.pane.active{display:block;}
-.card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+.card{background:var(--surf);border:.5px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;}
 .ctitle{font-size:14px;font-weight:600;margin-bottom:12px;}
-.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem;}
-.stat{background:var(--surface);border:.5px solid var(--border);border-radius:var(--radius);padding:14px;}
-.slabel{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
-.sval{font-size:22px;font-weight:600;line-height:1;}
-.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.bar-lbl{font-size:12px;color:var(--text2);width:110px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.bar-track{flex:1;background:var(--surface2);border-radius:4px;height:10px;}
-.bar-fill{height:10px;border-radius:4px;}
-.bar-val{font-size:12px;font-weight:500;min-width:55px;text-align:right;}
-.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500;}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-bottom:1.25rem;}
+.stat{background:var(--surf);border:.5px solid var(--border);border-radius:var(--r);padding:13px;}
+.slbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.sval{font-size:20px;font-weight:600;line-height:1.1;}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.bar-lbl{font-size:12px;color:var(--text2);width:105px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bar-track{flex:1;background:var(--surf2);border-radius:4px;height:9px;}
+.bar-fill{height:9px;border-radius:4px;}
+.bar-val{font-size:12px;font-weight:500;min-width:52px;text-align:right;}
+.badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:500;}
 .bok{background:var(--ok-bg);color:var(--ok);}
 .bwarn{background:var(--warn-bg);color:var(--warn);}
 .berr{background:var(--err-bg);color:var(--err);}
 table{width:100%;border-collapse:collapse;font-size:12px;}
-th{font-size:11px;color:var(--text2);font-weight:500;padding:6px 8px;text-align:right;border-bottom:.5px solid var(--border2);}
+th{font-size:11px;color:var(--text2);font-weight:500;padding:6px 7px;text-align:right;border-bottom:.5px solid var(--border2);}
 th:first-child{text-align:left;}
-td{padding:6px 8px;text-align:right;border-bottom:.5px solid var(--border);}
+td{padding:6px 7px;text-align:right;border-bottom:.5px solid var(--border);}
 td:first-child{text-align:left;}
 tr:last-child td{border-bottom:none;}
-tr.tot td{font-weight:600;background:var(--surface2);}
+tr.tot td{font-weight:600;background:var(--surf2);}
 tr.proj td{color:var(--text2);font-style:italic;}
 tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;}
 .fg{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
 .fg label{font-size:11px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:.3px;}
-.fg input{background:var(--surface2);border:.5px solid var(--border2);border-radius:var(--rsm);padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none;width:100%;}
-.fg input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,196,.12);}
-.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 14px;}
-.btn{padding:9px 20px;border-radius:var(--rsm);font-size:13px;font-family:inherit;cursor:pointer;border:none;font-weight:500;}
+.fg input,.fg select{background:var(--surf2);border:.5px solid var(--border2);border-radius:var(--rsm);padding:7px 9px;font-size:13px;color:var(--text);font-family:inherit;outline:none;width:100%;}
+.fg input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,196,.1);}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:0 14px;}
+.btn{padding:8px 18px;border-radius:var(--rsm);font-size:13px;font-family:inherit;cursor:pointer;border:none;font-weight:500;}
 .btn-p{background:var(--blue);color:#fff;}.btn-p:hover{opacity:.88;}
-.btn-del{background:none;border:none;color:var(--err);cursor:pointer;font-size:14px;padding:2px 6px;}
-.bgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-bottom:1.25rem;}
-.bcard{background:var(--surface);border:.5px solid var(--border);border-radius:var(--radius);padding:12px;}
-.bcard-name{font-size:12px;font-weight:600;margin-bottom:8px;}
+.btn-g{background:var(--ok);color:#fff;}.btn-g:hover{opacity:.88;}
+.btn-s{background:var(--surf2);color:var(--text);border:.5px solid var(--border2);}
+.btn-del{background:none;border:none;color:var(--err);cursor:pointer;font-size:13px;padding:2px 5px;}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem;}
+.bcard{background:var(--surf);border:.5px solid var(--border);border-radius:var(--r);padding:11px;}
+.bcard-name{font-size:12px;font-weight:600;margin-bottom:7px;}
 .bcard-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:3px;}
-.bcard-tot{font-size:16px;font-weight:700;margin-top:8px;padding-top:8px;border-top:.5px solid var(--border);}
-.abox{border-radius:var(--rsm);padding:10px 14px;font-size:12px;margin-bottom:10px;}
-.abox.warn{background:var(--warn-bg);color:var(--warn);border:.5px solid var(--warn);}
-.abox.err{background:var(--err-bg);color:var(--err);border:.5px solid var(--err);}
-.ybtn{padding:6px 14px;border-radius:20px;border:.5px solid var(--border2);background:none;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;}
+.bcard-tot{font-size:15px;font-weight:700;margin-top:7px;padding-top:7px;border-top:.5px solid var(--border);}
+.abox{border-radius:var(--rsm);padding:9px 13px;font-size:12px;margin-bottom:10px;border:.5px solid;}
+.abox.warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn);}
+.abox.err{background:var(--err-bg);color:var(--err);border-color:var(--err);}
+.forfait-item{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surf2);border-radius:var(--rsm);margin-bottom:4px;font-size:12px;flex-wrap:wrap;}
+.forfait-item input[type=date]{width:125px;background:var(--surf);border:.5px solid var(--border2);border-radius:4px;padding:3px 5px;font-size:11px;color:var(--text);font-family:inherit;outline:none;}
+.forfait-item input[type=number]{width:65px;background:var(--surf);border:.5px solid var(--border2);border-radius:4px;padding:3px 5px;font-size:12px;color:var(--text);font-family:inherit;outline:none;}
+.ybtn{padding:5px 13px;border-radius:20px;border:.5px solid var(--border2);background:none;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;}
 .ybtn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
-.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(128,128,128,.3);border-top-color:var(--blue);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:4px;}
+.sec-title{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin:1.25rem 0 .75rem;padding-bottom:6px;border-bottom:.5px solid var(--border2);}
+.loc-color{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:1px;}
+.spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(128,128,128,.25);border-top-color:var(--blue);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:4px;}
 @keyframes sp{to{transform:rotate(360deg);}}
 @media(max-width:520px){
   .sgrid{grid-template-columns:1fr 1fr;}
   .bgrid{grid-template-columns:1fr 1fr;}
-  .bar-lbl{width:75px;font-size:11px;}
   .tab{font-size:11px;padding:7px 3px;}
-  .header h1{font-size:15px;}
+  .forfait-item{flex-direction:column;align-items:flex-start;}
 }
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="header">
-    <div style="font-size:28px">⚡</div>
-    <div>
-      <h1>Suivi Électricité — Jean Camp</h1>
-      <p>Narbonne · 4 appartements</p>
-    </div>
+  <div class="hdr">
+    <div style="font-size:26px">🏠</div>
+    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau</p></div>
     <span id="sync" class="sync busy"><span class="spin"></span>Chargement…</span>
   </div>
   <div class="tabs">
-    <button class="tab active" onclick="showTab('dashboard')">🏠 Bord</button>
-    <button class="tab" onclick="showTab('elec')">⚡ Électricité</button>
+    <button class="tab active" onclick="showTab('board')">🏠 Board</button>
     <button class="tab" onclick="showTab('locataires')">👤 Locataires</button>
+    <button class="tab" onclick="showTab('elec')">⚡ Électricité</button>
     <button class="tab" onclick="showTab('eau')">💧 Eau</button>
   </div>
-  <div id="pane-dashboard" class="pane active"></div>
-  <div id="pane-elec" class="pane"></div>
-  <div id="pane-annuel" class="pane"></div>
-  <div id="pane-releves" class="pane"></div>
-  <div id="pane-ajouter" class="pane"></div>
+  <div id="pane-board" class="pane active"></div>
   <div id="pane-locataires" class="pane"></div>
+  <div id="pane-elec" class="pane"></div>
   <div id="pane-eau" class="pane"></div>
 </div>
 
 <script>
 // ════════════════════════════════════════════════════════════
-//  CONFIG JSONBin
+//  JSONBIN
 // ════════════════════════════════════════════════════════════
 const BIN_ID  = "69ff6396c0954111d8fcb091";
 const API_KEY = "$2a$10$w8q1L/f0pDxQRu8gWdicXerF2USsSati1MdCZZTo26ieSTBsCfnmy";
-const BIN_URL = "https://api.jsonbin.io/v3/b/" + BIN_ID;
+const BIN_URL = "https://api.jsonbin.io/v3/b/"+BIN_ID;
 const HDRS    = {"Content-Type":"application/json","X-Master-Key":API_KEY,"X-Bin-Versioning":"false"};
+const CACHE   = "jeancamp_v7";
+
+const MOIS = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
+const COLORS = ["#1a6fc4","#0f7a5a","#c44a1a","#5a45b8","#0a8080","#b06010","#7a2080","#206040"];
 
 // ════════════════════════════════════════════════════════════
-//  CONSTANTES
+//  STRUCTURE : une liste unique de locataires
+//  Chaque locataire a :
+//    id, nom, appart, couleur
+//    elec: { actif:bool, forfaits:[{debut,fin,montant}] }
+//    eau:  { actif:bool, forfaits:[{debut,fin,montant}] }
+//  Relevés séparés :
+//    state.elec.releves : [{date, [locId]: kwh, ...}]
+//    state.eau.releves  : [{date, [locId]: m3, ...}]
 // ════════════════════════════════════════════════════════════
-const APTS = [
-  {id:"pizzeria",name:"Appart Bas Pizzeria",short:"Pizzeria",color:"#1a6fc4"},
-  {id:"jardin",  name:"Appart Bas Jardin",  short:"Jardin",  color:"#0f7a5a"},
-  {id:"etage",   name:"Appart Étage",       short:"Étage",   color:"#c44a1a"},
-  {id:"bureau",  name:"Bureau",             short:"Bureau",  color:"#5a45b8"},
-];
-const MOIS = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
-const CACHE_KEY = "elec_jc_v5";
 
 const DEFAULTS = {
-  locataires:{pizzeria:"Nicole Vidal",jardin:"Ana",etage:"Thomas / Sandy",bureau:"Emma"},
-  forfaits:  {pizzeria:50,jardin:75,etage:100,bureau:0},
-  tarif: 0.19,
-  releves:[
-    {date:"01/03/2025",pizzeria:4497.5, jardin:6527.47, etage:8378.97,  bureau:1102.6},
-    {date:"01/04/2025",pizzeria:4929.53,jardin:7210.91, etage:9154.91,  bureau:1118.53},
-    {date:"01/05/2025",pizzeria:5234.65,jardin:7701.43, etage:9900.0,   bureau:1129.0},
-    {date:"01/06/2025",pizzeria:5511.36,jardin:8311.04, etage:10349.03, bureau:1141.11},
-    {date:"01/07/2025",pizzeria:5686.71,jardin:8589.22, etage:10609.55, bureau:1146.85},
-    {date:"01/08/2025",pizzeria:5848.46,jardin:8907.1,  etage:10844.48, bureau:1150.92},
-    {date:"01/09/2025",pizzeria:6031.12,jardin:9291.89, etage:11628.25, bureau:1276.94},
-    {date:"01/10/2025",pizzeria:6304.01,jardin:9697.58, etage:12346.55, bureau:1410.87},
-    {date:"01/11/2025",pizzeria:6475.94,jardin:9919.4,  etage:12714.47, bureau:1440.04},
-    {date:"01/12/2025",pizzeria:6627.34,jardin:10120.72,etage:12913.22, bureau:1473.98},
-    {date:"01/01/2026",pizzeria:6806.87,jardin:10345.19,etage:13276.33, bureau:1504.2},
-    {date:"01/02/2026",pizzeria:7174.31,jardin:10818.17,etage:14293.58, bureau:1542.88},
-    {date:"01/03/2026",pizzeria:7851.35,jardin:11767.6, etage:15920.24, bureau:1591.83},
-    {date:"01/04/2026",pizzeria:8219.76,jardin:12273.85,etage:16501.95, bureau:1618.22},
-    {date:"01/05/2026",pizzeria:8525.89,jardin:12769.62,etage:16914.85, bureau:1635.16},
+  tarifElec: 0.19,
+  tarifEau:  3.50,
+  locataires: [
+    {id:"l1", nom:"Nicole Vidal",  appart:"Appart Bas Pizzeria", couleur:"#1a6fc4",
+     elec:{actif:true,  forfaits:[{debut:"01/01/2025",fin:null,montant:50}]},
+     eau: {actif:true,  forfaits:[{debut:"01/01/2025",fin:null,montant:20}]}},
+    {id:"l2", nom:"Ana",           appart:"Appart Bas Jardin",   couleur:"#0f7a5a",
+     elec:{actif:true,  forfaits:[{debut:"01/01/2025",fin:null,montant:75}]},
+     eau: {actif:true,  forfaits:[{debut:"01/01/2025",fin:null,montant:20}]}},
+    {id:"l3", nom:"Thomas/Sandy",  appart:"Appart Étage",        couleur:"#c44a1a",
+     elec:{actif:true,  forfaits:[{debut:"01/01/2025",fin:null,montant:100}]},
+     eau: {actif:true,  forfaits:[{debut:"01/01/2025",fin:null,montant:30}]}},
+    {id:"l4", nom:"Emma",          appart:"Bureau",              couleur:"#5a45b8",
+     elec:{actif:true,  forfaits:[{debut:"01/01/2025",fin:null,montant:0}]},
+     eau: {actif:false, forfaits:[{debut:"01/01/2025",fin:null,montant:0}]}},
   ],
-  // ── EAU ──
-  eau: {
-    tarifM3: 3.50,
-    locataires: [
-      {id:"w-pizzeria", nom:"Nicole Vidal",  appart:"Appart Bas Pizzeria", forfait:20},
-      {id:"w-jardin",   nom:"Ana",           appart:"Appart Bas Jardin",   forfait:20},
-      {id:"w-etage",    nom:"Thomas / Sandy",appart:"Appart Étage",        forfait:30},
-      {id:"w-bureau",   nom:"Emma",          appart:"Bureau",              forfait:0},
-    ],
-    releves: []
-  }
+  elec: {
+    releves:[
+      {date:"01/03/2025",l1:4497.5, l2:6527.47, l3:8378.97,  l4:1102.6},
+      {date:"01/04/2025",l1:4929.53,l2:7210.91, l3:9154.91,  l4:1118.53},
+      {date:"01/05/2025",l1:5234.65,l2:7701.43, l3:9900.0,   l4:1129.0},
+      {date:"01/06/2025",l1:5511.36,l2:8311.04, l3:10349.03, l4:1141.11},
+      {date:"01/07/2025",l1:5686.71,l2:8589.22, l3:10609.55, l4:1146.85},
+      {date:"01/08/2025",l1:5848.46,l2:8907.1,  l3:10844.48, l4:1150.92},
+      {date:"01/09/2025",l1:6031.12,l2:9291.89, l3:11628.25, l4:1276.94},
+      {date:"01/10/2025",l1:6304.01,l2:9697.58, l3:12346.55, l4:1410.87},
+      {date:"01/11/2025",l1:6475.94,l2:9919.4,  l3:12714.47, l4:1440.04},
+      {date:"01/12/2025",l1:6627.34,l2:10120.72,l3:12913.22, l4:1473.98},
+      {date:"01/01/2026",l1:6806.87,l2:10345.19,l3:13276.33, l4:1504.2},
+      {date:"01/02/2026",l1:7174.31,l2:10818.17,l3:14293.58, l4:1542.88},
+      {date:"01/03/2026",l1:7851.35,l2:11767.6, l3:15920.24, l4:1591.83},
+      {date:"01/04/2026",l1:8219.76,l2:12273.85,l3:16501.95, l4:1618.22},
+      {date:"01/05/2026",l1:8525.89,l2:12769.62,l3:16914.85, l4:1635.16},
+    ]
+  },
+  eau: { releves:[] }
 };
 
 // ════════════════════════════════════════════════════════════
 //  ÉTAT
 // ════════════════════════════════════════════════════════════
 let STATE = null;
-function S() { return STATE; }
+const S  = ()=>STATE;
+const LE = ()=>STATE.locataires.filter(l=>l.elec&&l.elec.actif);
+const LW = ()=>STATE.locataires.filter(l=>l.eau&&l.eau.actif);
 
-function setState(data) {
-  STATE = data;
-  localStorage.setItem(CACHE_KEY, JSON.stringify(STATE));
+function setState(data){
+  STATE = migrer(data);
+  localStorage.setItem(CACHE, JSON.stringify(STATE));
+}
+
+function migrer(data){
+  // Déjà au nouveau format
+  if(data.locataires && Array.isArray(data.locataires) && data.locataires[0] && data.locataires[0].elec){
+    if(!data.elec) data.elec = {releves:[]};
+    if(!data.eau)  data.eau  = {releves:[]};
+    return data;
+  }
+  // Ancien format → nouveau
+  const n = JSON.parse(JSON.stringify(DEFAULTS));
+  // Relevés élec anciens (clés pizzeria/jardin/etage/bureau → l1/l2/l3/l4)
+  const map = {pizzeria:"l1",jardin:"l2",etage:"l3",bureau:"l4"};
+  if(data.elec && data.elec.releves){
+    n.elec.releves = data.elec.releves.map(r=>{
+      const nr={date:r.date};
+      Object.keys(map).forEach(k=>{ if(r[k]!=null) nr[map[k]]=r[k]; });
+      return nr;
+    });
+  } else if(data.releves){
+    n.elec.releves = data.releves.map(r=>{
+      const nr={date:r.date};
+      Object.keys(map).forEach(k=>{ if(r[k]!=null) nr[map[k]]=r[k]; });
+      return nr;
+    });
+  }
+  // Tarifs
+  if(data.tarifElec) n.tarifElec=data.tarifElec;
+  else if(data.elec&&data.elec.tarif) n.tarifElec=data.elec.tarif;
+  if(data.tarifEau) n.tarifEau=data.tarifEau;
+  else if(data.eau&&data.eau.tarifM3) n.tarifEau=data.eau.tarifM3;
+  // Relevés eau anciens
+  if(data.eau&&data.eau.releves) n.eau.releves=data.eau.releves;
+  // Locataires eau anciens
+  if(data.eau&&data.eau.locataires){
+    data.eau.locataires.forEach((wl,i)=>{
+      if(i<n.locataires.length){
+        n.locataires[i].eau.actif=true;
+        const forf=wl.forfaits||[{debut:"01/01/2025",fin:null,montant:wl.forfait||0}];
+        n.locataires[i].eau.forfaits=forf;
+      }
+    });
+    // Remapper IDs eau anciens (w-pizzeria etc) vers l1/l2/l3/l4
+    const wmap={"w-pizzeria":"l1","w-jardin":"l2","w-etage":"l3","w-bureau":"l4"};
+    n.eau.releves=n.eau.releves.map(r=>{
+      const nr={date:r.date};
+      Object.keys(wmap).forEach(k=>{ if(r[k]!=null) nr[wmap[k]]=r[k]; });
+      // garder les IDs non mappés
+      Object.keys(r).forEach(k=>{ if(k!=='date'&&!wmap[k]) nr[k]=r[k]; });
+      return nr;
+    });
+  }
+  return n;
 }
 
 // ════════════════════════════════════════════════════════════
 //  SYNC
 // ════════════════════════════════════════════════════════════
-const syncEl = document.getElementById("sync");
-function syncOk()  { syncEl.className="sync ok";  syncEl.textContent="✅ Synchronisé"; }
-function syncErr() { syncEl.className="sync err"; syncEl.textContent="❌ Hors ligne"; }
-function syncBusy(msg){ syncEl.className="sync busy"; syncEl.innerHTML='<span class="spin"></span>'+(msg||"Sauvegarde…"); }
+const syncEl=document.getElementById("sync");
+const setSyncOk  =()=>{ syncEl.className="sync ok";  syncEl.textContent="✅ Synchronisé"; };
+const setSyncErr =()=>{ syncEl.className="sync err"; syncEl.textContent="❌ Hors ligne"; };
+const setSyncBusy=(m)=>{ syncEl.className="sync busy"; syncEl.innerHTML=`<span class="spin"></span>${m||"Sauvegarde…"}`; };
 
-async function charger() {
-  syncBusy("Chargement…");
-  try {
-    const r = await fetch(BIN_URL+"/latest", {headers:{"X-Master-Key":API_KEY}});
-    if (!r.ok) throw new Error("HTTP "+r.status);
-    const data = await r.json();
-    const rec = data.record;
-    if (!rec || rec.init) {
-      // Bin vide : on pousse les données par défaut
-      await sauvegarder(STATE || JSON.parse(JSON.stringify(DEFAULTS)));
-    } else {
-      // Si eau absent (anciennes données), on l'ajoute
-      if (!rec.eau) rec.eau = JSON.parse(JSON.stringify(DEFAULTS.eau));
-      setState(rec);
-      syncOk();
-      refreshCurrent();
-    }
-  } catch(e) {
-    console.error("JSONBin load error:", e);
-    syncErr();
-    // On reste sur le cache si dispo
-    if (!STATE) setState(JSON.parse(JSON.stringify(DEFAULTS)));
-    refreshCurrent();
-  }
+async function charger(){
+  setSyncBusy("Chargement…");
+  try{
+    const r=await fetch(BIN_URL+"/latest",{headers:{"X-Master-Key":API_KEY}});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const data=await r.json();
+    const rec=data.record;
+    if(!rec||rec.init){ await sauvegarder(); }
+    else{ setState(rec); setSyncOk(); refreshCurrent(); }
+  }catch(e){ console.error(e); setSyncErr(); }
 }
 
-async function sauvegarder(data) {
-  if (data) setState(data);
-  syncBusy();
-  try {
-    const r = await fetch(BIN_URL, {method:"PUT", headers:HDRS, body:JSON.stringify(STATE)});
-    if (!r.ok) throw new Error("HTTP "+r.status);
-    syncOk();
-  } catch(e) {
-    console.error("JSONBin save error:", e);
-    syncErr();
-    alert("Erreur sauvegarde : "+e.message);
-  }
+async function sauvegarder(data){
+  if(data) setState(data);
+  setSyncBusy();
+  try{
+    const r=await fetch(BIN_URL,{method:"PUT",headers:HDRS,body:JSON.stringify(STATE)});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    localStorage.setItem(CACHE,JSON.stringify(STATE));
+    setSyncOk();
+  }catch(e){ setSyncErr(); alert("Erreur sauvegarde : "+e.message); }
 }
-window.save = () => sauvegarder();
+window.save=sauvegarder;
 
 // ════════════════════════════════════════════════════════════
 //  ROUTING
 // ════════════════════════════════════════════════════════════
-const TABS = ["dashboard","elec","locataires","eau"];
+const TABS=["board","locataires","elec","eau"];
+let elecSub="releves", eauSub="releves";
+let elecYear=null, eauYear=null;
 
-function render(name) {
-  if      (name==="dashboard")  renderDashboard();
-  else if (name==="elec")       renderElec();
-  else if (name==="annuel")     renderAnnuel();
-  else if (name==="releves")    renderReleves();
-  else if (name==="ajouter")    renderAjouter();
-  else if (name==="locataires") renderLocataires();
-  else if (name==="eau")        renderEau();
+function render(name){
+  if(name==="board")       renderBoard();
+  else if(name==="locataires") renderLocataires();
+  else if(name==="elec")   renderElec();
+  else if(name==="eau")    renderEau();
 }
-
-function refreshCurrent() {
-  const i = [...document.querySelectorAll(".tab")].findIndex(e=>e.classList.contains("active"));
-  render(TABS[i] || "dashboard");
+function refreshCurrent(){
+  const i=[...document.querySelectorAll(".tab")].findIndex(e=>e.classList.contains("active"));
+  render(TABS[i]||"board");
 }
-
-window.showTab = function(name) {
+window.showTab=function(name){
   document.querySelectorAll(".pane").forEach(e=>e.classList.remove("active"));
-  document.querySelectorAll(".tab").forEach((e,i)=>e.classList.toggle("active", TABS[i]===name));
+  document.querySelectorAll(".tab").forEach((e,i)=>e.classList.toggle("active",TABS[i]===name));
   document.getElementById("pane-"+name).classList.add("active");
   render(name);
 };
@@ -261,286 +307,108 @@ window.showTab = function(name) {
 // ════════════════════════════════════════════════════════════
 //  HELPERS
 // ════════════════════════════════════════════════════════════
-function getYear(s)  { return s.split("/")[2]; }
-function getYears()  { return [...new Set(S().releves.map(r=>getYear(r.date)))].sort(); }
-function sortDate(a,b){
-  const p=s=>{const[d,m,y]=s.split("/");return new Date(+y,+m-1,+d);};
-  return p(a.date)-p(b.date);
+function parseD(s){ const[d,m,y]=s.split("/"); return new Date(+y,+m-1,+d); }
+function getYear(s){ return s.split("/")[2]; }
+function getYearsFrom(releves){ return[...new Set(releves.map(r=>getYear(r.date)))].sort(); }
+function sortByDate(a,b){ return parseD(a.date)-parseD(b.date); }
+function fmtBal(b){ return(b>=0?"+":"")+b.toFixed(2); }
+function colorBal(b){ return b>=0?"var(--ok)":"var(--err)"; }
+function toInputDate(s){ if(!s) return ""; const[d,m,y]=s.split("/"); return`${y}-${m}-${d}`; }
+function fromInputDate(s){ if(!s) return null; const[y,m,d]=s.split("-"); return`${d}/${m}/${y}`; }
+function dateLabel(s){
+  const[d,m,y]=s.split("/");
+  return`${MOIS[+m-1]} ${y}<br><span style="font-size:10px;color:var(--text3)">le ${d}/${m}</span>`;
 }
-function calcDiffs(releves) {
+function getForfait(forfaits,dateStr){
+  const d=parseD(dateStr);
+  const matches=forfaits.filter(f=>{
+    const debut=parseD(f.debut);
+    const fin=f.fin?parseD(f.fin):new Date(9999,0,1);
+    return d>=debut&&d<=fin;
+  }).sort((a,b)=>parseD(b.debut)-parseD(a.debut));
+  return matches.length?matches[0].montant:0;
+}
+function badgeKwh(d){ return d>400?"berr":d>200?"bwarn":"bok"; }
+function badgeM3(d){  return d>10?"berr":d>5?"bwarn":"bok"; }
+
+// Calcul diffs élec pour un locataire
+function calcElecDiffs(locId){
+  const rels=[...S().elec.releves.filter(r=>r[locId]!=null)].sort(sortByDate);
+  const loc=S().locataires.find(l=>l.id===locId);
+  if(!loc) return [];
   const res=[];
-  for(let i=1;i<releves.length;i++){
-    const cur=releves[i], prv=releves[i-1], row={date:cur.date};
-    APTS.forEach(a=>{
-      row[a.id+"_rel"]  = cur[a.id];
-      row[a.id+"_diff"] = (cur[a.id]!=null&&prv[a.id]!=null) ? +(cur[a.id]-prv[a.id]).toFixed(2) : null;
-      row[a.id+"_prix"] = row[a.id+"_diff"]!=null ? +(row[a.id+"_diff"]*S().tarif).toFixed(2) : null;
-    });
-    res.push(row);
+  for(let i=1;i<rels.length;i++){
+    const diff=+(rels[i][locId]-rels[i-1][locId]).toFixed(2);
+    const prix=+(diff*S().tarifElec).toFixed(2);
+    const forf=getForfait(loc.elec.forfaits,rels[i].date);
+    res.push({date:rels[i].date,releve:rels[i][locId],diff,prix,forf});
   }
   return res;
 }
-function badgeDiff(d){ return d>400?"berr":d>200?"bwarn":"bok"; }
-function colorBal(b){ return b>=0?"var(--ok)":"var(--err)"; }
-function fmtBal(b){ return (b>=0?"+":"")+b.toFixed(2); }
-function dateLabel(dateStr){
-  const[d,m,y]=dateStr.split("/");
-  return `${MOIS[+m-1]} ${y}<br><span style="font-size:10px;color:var(--text3)">relevé le ${d}/${m}</span>`;
+
+// Calcul diffs eau pour un locataire
+function calcEauDiffs(locId){
+  const rels=[...S().eau.releves.filter(r=>r[locId]!=null)].sort(sortByDate);
+  const loc=S().locataires.find(l=>l.id===locId);
+  if(!loc) return [];
+  const res=[];
+  for(let i=1;i<rels.length;i++){
+    const diff=+(rels[i][locId]-rels[i-1][locId]).toFixed(3);
+    const prix=+(diff*S().tarifEau).toFixed(2);
+    const forf=getForfait(loc.eau.forfaits,rels[i].date);
+    res.push({date:rels[i].date,releve:rels[i][locId],diff,prix,forf});
+  }
+  return res;
+}
+
+function elecDernier(locId){
+  const rels=[...S().elec.releves.filter(r=>r[locId]!=null)].sort(sortByDate);
+  return rels.length?rels[rels.length-1][locId]:null;
+}
+function eauDernier(locId){
+  const rels=[...S().eau.releves.filter(r=>r[locId]!=null)].sort(sortByDate);
+  return rels.length?rels[rels.length-1][locId]:null;
 }
 
 // ════════════════════════════════════════════════════════════
-//  ÉLECTRICITÉ (onglet principal avec sous-onglets)
+//  FORFAIT RENDERER (réutilisé partout)
 // ════════════════════════════════════════════════════════════
-let elecTab = 'releves';
-
-function renderElec() {
-  const pane = document.getElementById("pane-elec");
-  pane.innerHTML = `<div class="tabs" style="margin-bottom:1rem">
-    <button class="tab ${elecTab==='releves'?'active':''}" onclick="elecTab='releves';renderElec()">📋 Relevés</button>
-    <button class="tab ${elecTab==='annuel'?'active':''}" onclick="elecTab='annuel';renderElec()">📅 Vue annuelle</button>
-    <button class="tab ${elecTab==='ajouter'?'active':''}" onclick="elecTab='ajouter';renderElec()">➕ Ajouter</button>
-  </div><div id="pane-elec-inner"></div>`;
-
-  if      (elecTab==='releves') renderReleves('pane-elec-inner');
-  else if (elecTab==='annuel')  renderAnnuel('pane-elec-inner');
-  else if (elecTab==='ajouter') renderAjouter('pane-elec-inner');
+function renderForfaits(forfaits,type,locId){
+  return forfaits.map((f,i)=>`
+    <div class="forfait-item">
+      <span style="font-size:11px;color:var(--text2)">Du</span>
+      <input type="date" value="${toInputDate(f.debut)}" onchange="updForfait('${type}','${locId}',${i},'debut',this.value)"/>
+      <span style="font-size:11px;color:var(--text2)">au</span>
+      <input type="date" value="${toInputDate(f.fin||'')}" placeholder="en cours" onchange="updForfait('${type}','${locId}',${i},'fin',this.value)"/>
+      <span style="font-size:11px;color:var(--text2)">=</span>
+      <input type="number" value="${f.montant}" min="0" step="5" onchange="updForfait('${type}','${locId}',${i},'montant',this.value)"/>
+      <span style="font-size:11px;color:var(--text2)">€/mois</span>
+      ${forfaits.length>1?`<button class="btn-del" onclick="delForfait('${type}','${locId}',${i})">✕</button>`:''}
+    </div>`).join('');
 }
 
-// ════════════════════════════════════════════════════════════
-//  DASHBOARD
-// ════════════════════════════════════════════════════════════
-function renderDashboard() {
-  const diffs = calcDiffs(S().releves);
-  if (!diffs.length) { document.getElementById("pane-dashboard").innerHTML='<p style="color:var(--text2);padding:1rem">Pas assez de relevés.</p>'; return; }
-  const last = diffs[diffs.length-1];
-  const totD = APTS.reduce((a,b)=>a+(last[b.id+"_diff"]||0),0);
-  const totP = APTS.reduce((a,b)=>a+(last[b.id+"_prix"]||0),0);
-  const maxD = Math.max(...APTS.map(a=>last[a.id+"_diff"]||0));
-
-  let h = `<div class="sgrid">
-    <div class="stat"><div class="slabel">Dernier relevé</div><div class="sval" style="font-size:15px">${last.date}</div></div>
-    <div class="stat"><div class="slabel">Conso mois</div><div class="sval">${totD.toFixed(0)}<span style="font-size:12px;font-weight:400"> kWh</span></div></div>
-    <div class="stat"><div class="slabel">Coût mois</div><div class="sval">${totP.toFixed(0)}<span style="font-size:12px;font-weight:400"> €</span></div></div>
-    <div class="stat">
-      <div class="slabel">⚡ Tarif kWh</div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
-        <input id="db-tarif" type="number" step="0.001" value="${S().tarif}"
-          style="width:75px;background:var(--surface2);border:.5px solid var(--border2);border-radius:var(--rsm);padding:5px 7px;font-size:16px;font-weight:600;color:var(--text);font-family:inherit;outline:none"
-          onkeydown="if(event.key==='Enter')appliquerTarif()"/>
-        <span style="font-size:12px;color:var(--text2)">€</span>
-        <button onclick="appliquerTarif()" style="padding:5px 10px;background:var(--blue);color:#fff;border:none;border-radius:var(--rsm);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">OK</button>
-      </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">soit ${(S().tarif*100).toFixed(2)} c€/kWh</div>
-    </div>
-  </div>`;
-
-  h += `<div class="card"><div class="ctitle">📊 Consommation — dernier mois</div>`;
-  APTS.forEach(a=>{
-    const d=last[a.id+"_diff"]||0, p=last[a.id+"_prix"]||0;
-    h += `<div class="bar-row">
-      <span class="bar-lbl">${a.short}</span>
-      <div class="bar-track"><div class="bar-fill" style="width:${maxD>0?(d/maxD*100).toFixed(0):0}%;background:${a.color}"></div></div>
-      <span class="bar-val">${d.toFixed(0)} kWh</span>
-      <span class="badge ${badgeDiff(d)}">${p.toFixed(0)} €</span>
-    </div>`;
-  });
-  h += `</div>`;
-
-  h += `<div class="ctitle" style="margin-bottom:10px">💳 Balance forfait vs réel (dernier mois)</div><div class="bgrid">`;
-  APTS.forEach(a=>{
-    const forf=S().forfaits[a.id]||0, reel=last[a.id+"_prix"]||0, bal=+(forf-reel).toFixed(2);
-    h += `<div class="bcard">
-      <div class="bcard-name" style="color:${a.color}">${a.short}</div>
-      <div class="bcard-row"><span>Forfait</span><span>${forf} €</span></div>
-      <div class="bcard-row"><span>Consommé</span><span>${reel.toFixed(2)} €</span></div>
-      <div class="bcard-tot" style="color:${colorBal(bal)}">${fmtBal(bal)} €</div>
-    </div>`;
-  });
-  h += `</div>`;
-
-  getAlertes().forEach(a=> h+=`<div class="abox ${a.l}">⚠️ ${a.m}</div>`);
-  document.getElementById("pane-dashboard").innerHTML = h;
-}
-
-window.appliquerTarif = async function(){
-  const v = parseFloat(document.getElementById("db-tarif").value);
-  if(isNaN(v)||v<=0){alert("Tarif invalide.");return;}
-  S().tarif = v;
-  await sauvegarder();
-  renderDashboard();
+window.updForfait=function(type,locId,idx,field,val){
+  const loc=S().locataires.find(l=>l.id===locId);
+  if(!loc) return;
+  const f=loc[type].forfaits[idx];
+  if(field==='debut') f.debut=fromInputDate(val)||f.debut;
+  else if(field==='fin') f.fin=fromInputDate(val);
+  else f.montant=parseFloat(val)||0;
 };
 
-// ════════════════════════════════════════════════════════════
-//  VUE ANNUELLE
-// ════════════════════════════════════════════════════════════
-let selYear = null;
-window.renderAnnuel = renderAnnuel;
-function renderAnnuel(targetId) {
-  const target = targetId || 'pane-annuel';
-  const years = getYears();
-  if(!selYear||!years.includes(selYear)) selYear=years[years.length-1];
-  const diffs = calcDiffs(S().releves);
-
-  let h = `<div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">`;
-  years.forEach(y=> h+=`<button class="ybtn ${y===selYear?"active":""}" onclick="selYear='${y}';renderAnnuel()">${y}</button>`);
-  h += `</div>`;
-
-  const annee = diffs.filter(d=>getYear(d.date)===selYear);
-  APTS.forEach(a=>{
-    const total  = annee.reduce((s,d)=>s+(d[a.id+"_diff"]||0),0);
-    const totalP = +(total*S().tarif).toFixed(2);
-    const forfT  = (S().forfaits[a.id]||0)*annee.length;
-    const bal    = +(forfT-totalP).toFixed(2);
-    const rest   = 12-annee.length;
-    const moy    = annee.length>0 ? total/annee.length : 0;
-    const pKwh   = +(total+moy*rest).toFixed(0);
-    const pP     = +(pKwh*S().tarif).toFixed(2);
-    const pForf  = (S().forfaits[a.id]||0)*12;
-    const pBal   = +(pForf-pP).toFixed(2);
-    const lastM  = annee.length>0 ? +annee[annee.length-1].date.split("/")[1] : 0;
-
-    h += `<div class="card"><div class="ctitle" style="color:${a.color}">${a.name}
-      <span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${S().locataires[a.id]||"—"} · ${S().forfaits[a.id]||0} €/mois</span></div>`;
-    if(rest>0&&pBal<0)       h+=`<div class="abox err">⚠️ Dépassement estimé : <strong>${Math.abs(pBal).toFixed(0)} €</strong> de régularisation probable sur ${selYear}.</div>`;
-    else if(rest>0&&pBal<50) h+=`<div class="abox warn">⚡ Marge faible : ${pBal.toFixed(0)} € d'excédent estimé sur l'année.</div>`;
-
-    h += `<table><thead><tr><th>Mois</th><th>Relevé</th><th>kWh</th><th>Coût €</th><th>Forfait</th><th>Balance</th></tr></thead><tbody>`;
-    annee.forEach(d=>{
-      const df=d[a.id+"_diff"], px=d[a.id+"_prix"];
-      const b=df!=null?+((S().forfaits[a.id]||0)-px).toFixed(2):null;
-      h+=`<tr><td>${dateLabel(d.date)}</td>
-        <td>${d[a.id+"_rel"]!=null?d[a.id+"_rel"].toFixed(1):"—"}</td>
-        <td>${df!=null?`<span class="badge ${badgeDiff(df)}">${df.toFixed(0)}</span>`:"—"}</td>
-        <td>${px!=null?px.toFixed(2):"—"}</td>
-        <td>${S().forfaits[a.id]||0}</td>
-        <td style="color:${b!=null?colorBal(b):"var(--text2)"};">${b!=null?fmtBal(b):"—"}</td></tr>`;
-    });
-    if(rest>0){
-      for(let i=1;i<=rest;i++){
-        const mi=(lastM+i)%12;
-        const pp=+(moy*S().tarif).toFixed(2);
-        const pb=+((S().forfaits[a.id]||0)-pp).toFixed(2);
-        h+=`<tr class="proj${pb<0?" alerte":""}"><td>${MOIS[mi]} ${selYear} ✦</td><td>—</td>
-          <td>${moy.toFixed(0)}</td><td>${pp.toFixed(2)}</td>
-          <td>${S().forfaits[a.id]||0}</td>
-          <td style="color:${colorBal(pb)}">${fmtBal(pb)}</td></tr>`;
-      }
-    }
-    h+=`<tr class="tot"><td>Total réel (${annee.length} mois)</td><td>—</td><td>${total.toFixed(0)}</td><td>${totalP.toFixed(2)}</td><td>${forfT.toFixed(0)}</td>
-      <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td></tr>`;
-    if(rest>0) h+=`<tr class="tot" style="opacity:.7"><td>Projection ✦</td><td>—</td><td>${pKwh}</td><td>${pP.toFixed(2)}</td><td>${pForf}</td>
-      <td style="color:${colorBal(pBal)}">${fmtBal(pBal)}</td></tr>`;
-    h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection = moyenne mensuelle ${selYear}</p></div>`;
-  });
-  document.getElementById(target).innerHTML = h;
-}
-
-// ════════════════════════════════════════════════════════════
-//  ALERTES
-// ════════════════════════════════════════════════════════════
-function getAlertes(){
-  const al=[];
-  const diffs=calcDiffs(S().releves);
-  getYears().forEach(y=>{
-    const an=diffs.filter(d=>getYear(d.date)===y);
-    const rest=12-an.length; if(rest<=0) return;
-    APTS.forEach(a=>{
-      const tot=an.reduce((s,d)=>s+(d[a.id+"_diff"]||0),0);
-      const moy=an.length>0?tot/an.length:0;
-      const pp=+((tot+moy*rest)*S().tarif).toFixed(2);
-      const pb=+((S().forfaits[a.id]||0)*12-pp).toFixed(2);
-      if(pb<-30) al.push({l:"err",m:`${a.name} (${y}) : ~${Math.abs(pb).toFixed(0)} € de dépassement estimé.`});
-    });
-  });
-  return al;
-}
-
-// ════════════════════════════════════════════════════════════
-//  RELEVÉS
-// ════════════════════════════════════════════════════════════
-function renderReleves(targetId){
-  const target = targetId || 'pane-releves';
-  const diffs=calcDiffs(S().releves);
-  let h="";
-  APTS.forEach(a=>{
-    const tot=diffs.reduce((s,d)=>s+(d[a.id+"_diff"]||0),0);
-    const totP=+(tot*S().tarif).toFixed(2);
-    h+=`<div class="card"><div class="ctitle" style="color:${a.color}">${a.name}
-      <span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${S().locataires[a.id]||"—"}</span>
-      ${S().forfaits[a.id]?`<span class="badge bok" style="margin-left:6px">${S().forfaits[a.id]} €/mois</span>`:""}
-    </div>
-    <table><thead><tr><th>Mois</th><th>Relevé</th><th>kWh</th><th>Coût €</th><th>Forfait</th><th>Balance</th></tr></thead><tbody>`;
-    diffs.forEach(d=>{
-      const df=d[a.id+"_diff"],px=d[a.id+"_prix"];
-      const b=df!=null?+((S().forfaits[a.id]||0)-px).toFixed(2):null;
-      h+=`<tr><td>${dateLabel(d.date)}</td>
-        <td>${d[a.id+"_rel"]!=null?d[a.id+"_rel"].toFixed(1):"—"}</td>
-        <td>${df!=null?`<span class="badge ${badgeDiff(df)}">${df.toFixed(0)}</span>`:"—"}</td>
-        <td>${px!=null?px.toFixed(2):"—"}</td>
-        <td>${S().forfaits[a.id]||0}</td>
-        <td style="color:${b!=null?colorBal(b):"var(--text2)"};">${b!=null?fmtBal(b):"—"}</td></tr>`;
-    });
-    h+=`<tr class="tot"><td colspan="2">Total (${diffs.length} mois)</td><td>${tot.toFixed(0)}</td><td>${totP.toFixed(2)}</td><td colspan="2"></td></tr>
-    </tbody></table></div>`;
-  });
-  document.getElementById(target).innerHTML=h;
-}
-
-// ════════════════════════════════════════════════════════════
-//  AJOUTER
-// ════════════════════════════════════════════════════════════
-function renderAjouter(targetId){
-  const target = targetId || 'pane-ajouter';
-  const last=S().releves[S().releves.length-1];
-  let h=`<div class="card"><div class="ctitle">➕ Nouveau relevé</div>
-    <div class="fgrid">
-      <div class="fg"><label>Date du relevé</label><input type="date" id="f-date"/></div>
-      <div class="fg"><label>Tarif kWh (€)</label><input type="number" id="f-tarif" step="0.001" value="${S().tarif}"/></div>
-    </div>
-    <div class="fgrid">`;
-  APTS.forEach(a=>{
-    h+=`<div class="fg"><label style="color:${a.color}">${a.short} — dernier : ${last?last[a.id]:""}</label>
-      <input type="number" id="f-${a.id}" placeholder="kWh compteur" step="0.01"/></div>`;
-  });
-  h+=`</div><button class="btn btn-p" style="margin-top:4px" onclick="ajouterReleve()">💾 Enregistrer</button></div>`;
-
-  h+=`<div class="card"><div class="ctitle">📋 Historique brut</div><div style="overflow-x:auto">
-    <table><thead><tr><th>Date</th>${APTS.map(a=>`<th>${a.short}</th>`).join("")}<th></th></tr></thead><tbody>`;
-  S().releves.forEach((r,i)=>{
-    h+=`<tr><td>${r.date}</td>${APTS.map(a=>`<td>${r[a.id]??""}</td>`).join("")}
-      <td><button class="btn-del" onclick="supprimerReleve(${i})">🗑</button></td></tr>`;
-  });
-  h+=`</tbody></table></div></div>`;
-  document.getElementById(target).innerHTML=h;
-  document.getElementById("f-date").valueAsDate=new Date();
-}
-
-window.ajouterReleve = async function(){
-  const dv=document.getElementById("f-date").value;
-  if(!dv){alert("Saisir une date.");return;}
-  const[y,m,d]=dv.split("-");
-  const nr={date:`${d}/${m}/${y}`};
-  let ok=true;
-  APTS.forEach(a=>{
-    const v=parseFloat(document.getElementById("f-"+a.id).value);
-    if(isNaN(v)) ok=false;
-    nr[a.id]=isNaN(v)?null:v;
-  });
-  if(!ok){alert("Saisir tous les relevés.");return;}
-  const tv=parseFloat(document.getElementById("f-tarif").value);
-  if(!isNaN(tv)&&tv>0) S().tarif=tv;
-  S().releves.push(nr);
-  S().releves.sort(sortDate);
-  await sauvegarder();
-  renderElec();
-  alert("✅ Relevé enregistré !");
+window.addForfait=function(type,locId){
+  const loc=S().locataires.find(l=>l.id===locId);
+  if(!loc) return;
+  const last=loc[type].forfaits[loc[type].forfaits.length-1];
+  loc[type].forfaits.push({debut:"01/01/2026",fin:null,montant:last.montant});
+  document.getElementById(`forf-${type}-${locId}`).innerHTML=renderForfaits(loc[type].forfaits,type,locId);
 };
 
-window.supprimerReleve = async function(i){
-  if(!confirm("Supprimer ?")) return;
-  S().releves.splice(i,1);
-  await sauvegarder();
-  renderElec();
+window.delForfait=function(type,locId,idx){
+  const loc=S().locataires.find(l=>l.id===locId);
+  if(!loc) return;
+  loc[type].forfaits.splice(idx,1);
+  document.getElementById(`forf-${type}-${locId}`).innerHTML=renderForfaits(loc[type].forfaits,type,locId);
 };
 
 // ════════════════════════════════════════════════════════════
@@ -549,280 +417,579 @@ window.supprimerReleve = async function(i){
 function renderLocataires(){
   let h=``;
 
-  // ── SECTION ÉLECTRICITÉ ──
-  h+=`<div class="card">
-    <div class="ctitle">⚡ Locataires — Électricité</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">`;
-  APTS.forEach(a=>{
-    h+=`<div class="card" style="margin-bottom:0;border:.5px solid ${a.color}44">
-      <div class="ctitle" style="color:${a.color};margin-bottom:10px">${a.short}</div>
-      <div class="fg"><label>Locataire</label><input type="text" id="loc-${a.id}" value="${S().locataires[a.id]||""}"/></div>
-      <div class="fg"><label>Forfait élec mensuel (€)</label><input type="number" id="forf-${a.id}" value="${S().forfaits[a.id]||0}" min="0" step="5"/></div>
-    </div>`;
-  });
-  h+=`</div>
-    <div class="fg" style="margin-top:14px;max-width:220px">
-      <label>Tarif kWh (€)</label>
-      <input type="number" id="loc-tarif" step="0.001" value="${S().tarif}"/>
-    </div>
-    <button class="btn btn-p" style="margin-top:4px" onclick="sauvegarderLocataires()">💾 Sauvegarder électricité</button>
-  </div>`;
-
-  // ── SECTION EAU ──
-  if(!S().eau) S().eau = JSON.parse(JSON.stringify(DEFAULTS.eau));
-  const wlocs = W().locataires;
-
-  h+=`<div class="card">
-    <div class="ctitle">💧 Locataires — Eau</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">`;
-  wlocs.forEach(l=>{
-    h+=`<div class="card" style="margin-bottom:0;border:.5px solid #1a6fc444">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-weight:600;color:var(--blue)">${l.nom}</span>
-        <button onclick="wSupprimerLoc('${l.id}')" class="btn-del" title="Supprimer">🗑</button>
-      </div>
-      <div class="fg"><label>Appartement</label><input type="text" id="wloc-appart-${l.id}" value="${l.appart||""}"/></div>
-      <div class="fg"><label>Forfait eau mensuel (€)</label><input type="number" id="wloc-forf-${l.id}" value="${l.forfait||0}" min="0" step="5"/></div>
-    </div>`;
-  });
-  h+=`</div>
-    <div class="fg" style="margin-top:14px;max-width:220px">
-      <label>Tarif m³ (€)</label>
-      <input type="number" id="loc-tarif-eau" step="0.01" value="${W().tarifM3}"/>
-    </div>
-    <button class="btn btn-p" style="margin-top:4px" onclick="sauvegarderLocatairesEau()">💾 Sauvegarder eau</button>
-  </div>`;
-
-  // ── AJOUTER LOCATAIRE EAU ──
-  h+=`<div class="card" style="border:.5px solid var(--blue)44">
-    <div class="ctitle" style="color:var(--blue)">➕ Ajouter un locataire eau</div>
+  // ── AJOUTER EN HAUT ──
+  h+=`<div class="card" style="border:.5px solid var(--blue);margin-bottom:1.5rem">
+    <div class="ctitle" style="color:var(--blue)">➕ Nouveau locataire</div>
     <div class="fgrid">
-      <div class="fg"><label>Nom</label><input id="wl-nom" type="text" placeholder="Nom du locataire"/></div>
-      <div class="fg"><label>Appartement</label><input id="wl-appart" type="text" placeholder="Ex: Appart Haut"/></div>
-      <div class="fg"><label>Forfait mensuel (€)</label><input id="wl-forfait" type="number" value="20" step="5"/></div>
+      <div class="fg"><label>Nom</label><input id="new-nom" type="text" placeholder="Nom du locataire"/></div>
+      <div class="fg"><label>Appartement / Local</label><input id="new-appart" type="text" placeholder="Ex : Appart Haut"/></div>
     </div>
-    <button onclick="wAjouterLoc()" class="btn btn-p" style="margin-top:4px">💾 Ajouter</button>
+    <div class="fgrid">
+      <div class="fg"><label>Forfait élec initial (€/mois)</label><input id="new-elec-forf" type="number" value="50" step="5"/></div>
+      <div class="fg"><label>Forfait eau initial (€/mois)</label><input id="new-eau-forf" type="number" value="20" step="5"/></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px">
+      <label style="font-size:12px;display:flex;align-items:center;gap:5px">
+        <input type="checkbox" id="new-elec-actif" checked/> Compteur électricité
+      </label>
+      <label style="font-size:12px;display:flex;align-items:center;gap:5px">
+        <input type="checkbox" id="new-eau-actif" checked/> Compteur eau
+      </label>
+      <button class="btn btn-p" onclick="ajouterLocataire()" style="margin-left:auto">➕ Ajouter</button>
+    </div>
   </div>`;
+
+  // ── LISTE DES LOCATAIRES ──
+  h+=`<div class="sec-title">👤 Locataires existants</div>`;
+
+  S().locataires.forEach((loc,idx)=>{
+    h+=`<div class="card" style="border-left:3px solid ${loc.couleur}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div>
+          <span class="loc-color" style="background:${loc.couleur}"></span>
+          <strong>${loc.nom}</strong>
+          <span style="font-size:12px;color:var(--text2);margin-left:6px">— ${loc.appart}</span>
+        </div>
+        <button class="btn-del" onclick="supprimerLocataire('${loc.id}')">🗑 Supprimer</button>
+      </div>
+      <div class="fgrid">
+        <div class="fg"><label>Nom</label><input type="text" id="loc-nom-${loc.id}" value="${loc.nom}"/></div>
+        <div class="fg"><label>Appartement</label><input type="text" id="loc-appart-${loc.id}" value="${loc.appart}"/></div>
+      </div>
+
+      <!-- ÉLEC -->
+      <div style="margin-top:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <label style="font-size:12px;font-weight:600;color:var(--blue);display:flex;align-items:center;gap:5px">
+            <input type="checkbox" id="loc-elec-actif-${loc.id}" ${loc.elec.actif?"checked":""} onchange="toggleActif('elec','${loc.id}',this.checked)"/>
+            ⚡ Compteur électricité
+          </label>
+        </div>
+        <div id="forf-elec-${loc.id}" ${!loc.elec.actif?'style="opacity:.4;pointer-events:none"':''}>
+          ${renderForfaits(loc.elec.forfaits,'elec',loc.id)}
+        </div>
+        <button onclick="addForfait('elec','${loc.id}')" class="btn btn-s" style="font-size:11px;padding:4px 10px;margin-top:3px">+ Période</button>
+      </div>
+
+      <!-- EAU -->
+      <div style="margin-top:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <label style="font-size:12px;font-weight:600;color:var(--teal);display:flex;align-items:center;gap:5px">
+            <input type="checkbox" id="loc-eau-actif-${loc.id}" ${loc.eau.actif?"checked":""} onchange="toggleActif('eau','${loc.id}',this.checked)"/>
+            💧 Compteur eau
+          </label>
+        </div>
+        <div id="forf-eau-${loc.id}" ${!loc.eau.actif?'style="opacity:.4;pointer-events:none"':''}>
+          ${renderForfaits(loc.eau.forfaits,'eau',loc.id)}
+        </div>
+        <button onclick="addForfait('eau','${loc.id}')" class="btn btn-s" style="font-size:11px;padding:4px 10px;margin-top:3px">+ Période</button>
+      </div>
+    </div>`;
+  });
+
+  // Tarifs globaux
+  h+=`<div class="card" style="margin-top:8px">
+    <div class="ctitle">⚙️ Tarifs globaux</div>
+    <div class="fgrid">
+      <div class="fg"><label>Tarif kWh électricité (€)</label><input type="number" id="glob-tarif-elec" step="0.001" value="${S().tarifElec}"/></div>
+      <div class="fg"><label>Tarif m³ eau (€)</label><input type="number" id="glob-tarif-eau" step="0.01" value="${S().tarifEau}"/></div>
+    </div>
+  </div>
+  <button class="btn btn-p" onclick="sauvegarderLocataires()">💾 Sauvegarder tout</button>`;
 
   document.getElementById("pane-locataires").innerHTML=h;
 }
 
-window.sauvegarderLocataires = async function(){
-  APTS.forEach(a=>{
-    S().locataires[a.id]=document.getElementById("loc-"+a.id).value;
-    S().forfaits[a.id]=parseFloat(document.getElementById("forf-"+a.id).value)||0;
-  });
-  const t=parseFloat(document.getElementById("loc-tarif").value);
-  if(!isNaN(t)&&t>0) S().tarif=t;
-  await sauvegarder();
-  alert("✅ Électricité sauvegardée !");
-  renderDashboard();
+window.toggleActif=function(type,locId,val){
+  const loc=S().locataires.find(l=>l.id===locId);
+  if(loc) loc[type].actif=val;
+  const div=document.getElementById(`forf-${type}-${locId}`);
+  if(div) div.style.cssText=val?'':'opacity:.4;pointer-events:none';
 };
 
-window.sauvegarderLocatairesEau = async function(){
-  if(!S().eau) S().eau=JSON.parse(JSON.stringify(DEFAULTS.eau));
-  W().locataires.forEach(l=>{
-    const a=document.getElementById("wloc-appart-"+l.id);
-    const f=document.getElementById("wloc-forf-"+l.id);
-    if(a) l.appart=a.value;
-    if(f) l.forfait=parseFloat(f.value)||0;
+window.ajouterLocataire=async function(){
+  const nom=document.getElementById("new-nom").value.trim();
+  const appart=document.getElementById("new-appart").value.trim();
+  const elecForf=parseFloat(document.getElementById("new-elec-forf").value)||0;
+  const eauForf=parseFloat(document.getElementById("new-eau-forf").value)||0;
+  const elecActif=document.getElementById("new-elec-actif").checked;
+  const eauActif=document.getElementById("new-eau-actif").checked;
+  if(!nom||!appart){alert("Renseigner nom et appartement.");return;}
+  const id="l"+Date.now();
+  const couleur=COLORS[S().locataires.length%COLORS.length];
+  S().locataires.push({
+    id,nom,appart,couleur,
+    elec:{actif:elecActif,forfaits:[{debut:"01/01/2025",fin:null,montant:elecForf}]},
+    eau: {actif:eauActif, forfaits:[{debut:"01/01/2025",fin:null,montant:eauForf}]},
   });
-  const t=parseFloat(document.getElementById("loc-tarif-eau").value);
-  if(!isNaN(t)&&t>0) W().tarifM3=t;
   await sauvegarder();
-  alert("✅ Eau sauvegardée !");
+  alert("✅ Locataire ajouté !");
+  renderLocataires();
+};
+
+window.supprimerLocataire=async function(locId){
+  if(!confirm("Supprimer ce locataire et tous ses relevés ?")) return;
+  S().locataires=S().locataires.filter(l=>l.id!==locId);
+  S().elec.releves=S().elec.releves.map(r=>{const nr={...r};delete nr[locId];return nr;});
+  S().eau.releves=S().eau.releves.map(r=>{const nr={...r};delete nr[locId];return nr;});
+  await sauvegarder();
+  renderLocataires();
+};
+
+window.sauvegarderLocataires=async function(){
+  S().locataires.forEach(loc=>{
+    const n=document.getElementById("loc-nom-"+loc.id);
+    const a=document.getElementById("loc-appart-"+loc.id);
+    if(n) loc.nom=n.value;
+    if(a) loc.appart=a.value;
+    const ce=document.getElementById("loc-elec-actif-"+loc.id);
+    const cw=document.getElementById("loc-eau-actif-"+loc.id);
+    if(ce) loc.elec.actif=ce.checked;
+    if(cw) loc.eau.actif=cw.checked;
+  });
+  const te=parseFloat(document.getElementById("glob-tarif-elec").value);
+  const tw=parseFloat(document.getElementById("glob-tarif-eau").value);
+  if(!isNaN(te)&&te>0) S().tarifElec=te;
+  if(!isNaN(tw)&&tw>0) S().tarifEau=tw;
+  await sauvegarder();
+  alert("✅ Sauvegardé !");
+  renderLocataires();
+};
+
+// ════════════════════════════════════════════════════════════
+//  BOARD
+// ════════════════════════════════════════════════════════════
+function renderBoard(){
+  let h="";
+  const lElec=LE(), lEau=LW();
+
+  // ── ÉLEC ──
+  h+=`<div class="sec-title">⚡ Électricité</div>`;
+  const allElecDiffs={};
+  lElec.forEach(l=>{ allElecDiffs[l.id]=calcElecDiffs(l.id); });
+  const hasElec=lElec.some(l=>allElecDiffs[l.id].length>0);
+
+  if(!hasElec){ h+=`<div class="abox warn">Aucun relevé électricité.</div>`; }
+  else{
+    // Stats globales
+    let totD=0,totP=0,lastDate="";
+    lElec.forEach(l=>{
+      const d=allElecDiffs[l.id];
+      if(!d.length) return;
+      const last=d[d.length-1];
+      totD+=last.diff; totP+=last.prix;
+      if(!lastDate||last.date>lastDate) lastDate=last.date;
+    });
+    h+=`<div class="sgrid">
+      <div class="stat"><div class="slbl">Dernier relevé</div><div class="sval" style="font-size:15px">${lastDate}</div></div>
+      <div class="stat"><div class="slbl">Conso totale</div><div class="sval">${totD.toFixed(0)}<span style="font-size:12px;font-weight:400"> kWh</span></div></div>
+      <div class="stat"><div class="slbl">Coût total</div><div class="sval">${totP.toFixed(0)}<span style="font-size:12px;font-weight:400"> €</span></div></div>
+      <div class="stat"><div class="slbl">⚡ Tarif kWh</div>
+        <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
+          <input id="db-tarif-elec" type="number" step="0.001" value="${S().tarifElec}" style="width:65px;background:var(--surf2);border:.5px solid var(--border2);border-radius:var(--rsm);padding:4px 6px;font-size:15px;font-weight:600;color:var(--text);font-family:inherit;outline:none"/>
+          <span style="font-size:11px;color:var(--text2)">€</span>
+          <button onclick="appliquerTarifElec()" style="padding:4px 8px;background:var(--blue);color:#fff;border:none;border-radius:var(--rsm);font-size:11px;cursor:pointer">OK</button>
+        </div>
+      </div>
+    </div>`;
+
+    const maxD=Math.max(...lElec.map(l=>{ const d=allElecDiffs[l.id]; return d.length?d[d.length-1].diff:0; }));
+    h+=`<div class="card"><div class="ctitle">Consommation par locataire</div>`;
+    lElec.forEach(l=>{
+      const d=allElecDiffs[l.id]; if(!d.length) return;
+      const last=d[d.length-1];
+      h+=`<div class="bar-row">
+        <span class="bar-lbl"><span class="loc-color" style="background:${l.couleur}"></span>${l.nom.split(' ')[0]}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${maxD>0?(last.diff/maxD*100).toFixed(0):0}%;background:${l.couleur}"></div></div>
+        <span class="bar-val">${last.diff.toFixed(0)} kWh</span>
+        <span class="badge ${badgeKwh(last.diff)}">${last.prix.toFixed(0)} €</span>
+      </div>`;
+    });
+    h+=`</div><div class="bgrid">`;
+    lElec.forEach(l=>{
+      const d=allElecDiffs[l.id]; if(!d.length) return;
+      const last=d[d.length-1],bal=+(last.forf-last.prix).toFixed(2);
+      h+=`<div class="bcard">
+        <div class="bcard-name" style="color:${l.couleur}">${l.nom}</div>
+        <div class="bcard-row"><span style="font-size:10px;color:var(--text3)">${l.appart}</span></div>
+        <div class="bcard-row"><span>Forfait</span><span>${last.forf} €</span></div>
+        <div class="bcard-row"><span>Consommé</span><span>${last.prix.toFixed(2)} €</span></div>
+        <div class="bcard-tot" style="color:${colorBal(bal)}">${fmtBal(bal)} €</div>
+      </div>`;
+    });
+    h+=`</div>`;
+    getAlertes('elec').forEach(a=>h+=`<div class="abox ${a.l}">⚠️ ${a.m}</div>`);
+  }
+
+  // ── EAU ──
+  h+=`<div class="sec-title" style="margin-top:1.5rem">💧 Eau</div>`;
+  if(!lEau.length){ h+=`<div class="abox warn">Aucun locataire eau actif.</div>`; }
+  else{
+    let anyEau=false;
+    h+=`<div class="bgrid">`;
+    lEau.forEach(l=>{
+      const d=calcEauDiffs(l.id); if(!d.length) return;
+      anyEau=true;
+      const last=d[d.length-1],bal=+(last.forf-last.prix).toFixed(2);
+      h+=`<div class="bcard">
+        <div class="bcard-name" style="color:var(--teal)">${l.nom}</div>
+        <div class="bcard-row"><span style="font-size:10px;color:var(--text3)">${l.appart}</span></div>
+        <div class="bcard-row"><span>Forfait</span><span>${last.forf} €</span></div>
+        <div class="bcard-row"><span>${last.diff.toFixed(2)} m³</span><span>${last.prix.toFixed(2)} €</span></div>
+        <div class="bcard-tot" style="color:${colorBal(bal)}">${fmtBal(bal)} €</div>
+      </div>`;
+    });
+    h+=`</div>`;
+    if(!anyEau) h+=`<p style="color:var(--text2);font-size:13px">Pas encore de relevés eau.</p>`;
+    getAlertes('eau').forEach(a=>h+=`<div class="abox ${a.l}">⚠️ ${a.m}</div>`);
+  }
+
+  document.getElementById("pane-board").innerHTML=h;
+}
+
+window.appliquerTarifElec=async function(){
+  const v=parseFloat(document.getElementById("db-tarif-elec").value);
+  if(isNaN(v)||v<=0){alert("Tarif invalide.");return;}
+  S().tarifElec=v; await sauvegarder(); renderBoard();
+};
+
+// ════════════════════════════════════════════════════════════
+//  ALERTES
+// ════════════════════════════════════════════════════════════
+function getAlertes(type){
+  const al=[];
+  const locs=type==='elec'?LE():LW();
+  locs.forEach(loc=>{
+    const diffs=type==='elec'?calcElecDiffs(loc.id):calcEauDiffs(loc.id);
+    const years=getYearsFrom(diffs.map(d=>({date:d.date})));
+    years.forEach(y=>{
+      const an=diffs.filter(d=>getYear(d.date)===y);
+      const rest=12-an.length; if(rest<=0) return;
+      const tot=an.reduce((s,d)=>s+d.diff,0);
+      const moy=an.length>0?tot/an.length:0;
+      const tarif=type==='elec'?S().tarifElec:S().tarifEau;
+      const projPrix=+((tot+moy*rest)*tarif).toFixed(2);
+      const lastForf=an[an.length-1].forf;
+      const forfT=an.reduce((s,d)=>s+d.forf,0);
+      const projForf=+(forfT+lastForf*rest).toFixed(0);
+      const pb=+(projForf-projPrix).toFixed(2);
+      const seuil=type==='elec'?-30:-10;
+      const icon=type==='elec'?"⚡":"💧";
+      if(pb<seuil) al.push({l:"err",m:`${icon} ${loc.nom} (${y}) : ~${Math.abs(pb).toFixed(0)} € de dépassement estimé.`});
+    });
+  });
+  return al;
+}
+
+// ════════════════════════════════════════════════════════════
+//  ÉLECTRICITÉ
+// ════════════════════════════════════════════════════════════
+function renderElec(){
+  document.getElementById("pane-elec").innerHTML=`
+    <div class="subtabs">
+      <button class="subtab ${elecSub==='releves'?'active':''}" onclick="elecSub='releves';renderElec()">📋 Relevés</button>
+      <button class="subtab ${elecSub==='annuel'?'active':''}" onclick="elecSub='annuel';renderElec()">📅 Synthèse annuelle</button>
+      <button class="subtab ${elecSub==='ajouter'?'active':''}" onclick="elecSub='ajouter';renderElec()">➕ Ajouter</button>
+    </div><div id="elec-inner"></div>`;
+  if(elecSub==='releves')     renderElecReleves();
+  else if(elecSub==='annuel') renderElecAnnuel();
+  else                        renderElecAjouter();
+}
+
+function renderElecReleves(){
+  const locs=LE(); let h="";
+  locs.forEach(loc=>{
+    const diffs=calcElecDiffs(loc.id);
+    const tot=diffs.reduce((s,d)=>s+d.diff,0);
+    const totP=+(tot*S().tarifElec).toFixed(2);
+    h+=`<div class="card"><div class="ctitle" style="color:${loc.couleur}">
+      <span class="loc-color" style="background:${loc.couleur}"></span>${loc.nom}
+      <span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${loc.appart}</span></div>`;
+    if(!diffs.length){ h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé.</p>`; }
+    else{
+      h+=`<table><thead><tr><th>Mois</th><th>Relevé</th><th>kWh</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
+      diffs.forEach(d=>{
+        const b=+(d.forf-d.prix).toFixed(2);
+        h+=`<tr><td>${dateLabel(d.date)}</td><td>${d.releve.toFixed(1)}</td>
+          <td><span class="badge ${badgeKwh(d.diff)}">${d.diff.toFixed(0)}</span></td>
+          <td>${d.prix.toFixed(2)}</td><td>${d.forf}</td>
+          <td style="color:${colorBal(b)}">${fmtBal(b)}</td></tr>`;
+      });
+      h+=`<tr class="tot"><td colspan="2">Total (${diffs.length} mois)</td><td>${tot.toFixed(0)}</td><td>${totP.toFixed(2)}</td><td colspan="2"></td></tr>`;
+      h+=`</tbody></table>`;
+    }
+    h+=`</div>`;
+  });
+  document.getElementById("elec-inner").innerHTML=h||`<div class="abox warn">Aucun locataire électricité actif.</div>`;
+}
+
+function renderElecAnnuel(){
+  const locs=LE();
+  const allRels=S().elec.releves;
+  const years=getYearsFrom(allRels);
+  if(!years.length){document.getElementById("elec-inner").innerHTML=`<div class="abox warn">Pas encore de relevés.</div>`;return;}
+  if(!elecYear||!years.includes(elecYear)) elecYear=years[years.length-1];
+  let h=`<div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">`;
+  years.forEach(y=>h+=`<button class="ybtn ${y===elecYear?"active":""}" onclick="elecYear='${y}';renderElec()">${y}</button>`);
+  h+=`</div>`;
+  locs.forEach(loc=>{
+    const diffs=calcElecDiffs(loc.id);
+    const annee=diffs.filter(d=>getYear(d.date)===elecYear);
+    const rest=12-annee.length;
+    const total=annee.reduce((s,d)=>s+d.diff,0);
+    const totalP=+(total*S().tarifElec).toFixed(2);
+    const forfT=annee.reduce((s,d)=>s+d.forf,0);
+    const bal=+(forfT-totalP).toFixed(2);
+    const moy=annee.length>0?total/annee.length:0;
+    const pKwh=+(total+moy*rest).toFixed(0);
+    const pP=+(pKwh*S().tarifElec).toFixed(2);
+    const lastForf=annee.length>0?annee[annee.length-1].forf:0;
+    const pForf=+(forfT+lastForf*rest).toFixed(0);
+    const pBal=+(pForf-pP).toFixed(2);
+    const lastM=annee.length>0?+annee[annee.length-1].date.split("/")[1]:0;
+    h+=`<div class="card"><div class="ctitle" style="color:${loc.couleur}">
+      <span class="loc-color" style="background:${loc.couleur}"></span>${loc.nom}
+      <span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${loc.appart}</span></div>`;
+    if(!annee.length){ h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé pour ${elecYear}.</p>`; }
+    else{
+      if(rest>0&&pBal<0)       h+=`<div class="abox err">⚠️ Dépassement estimé : <strong>${Math.abs(pBal).toFixed(0)} €</strong> pour ${elecYear}.</div>`;
+      else if(rest>0&&pBal<50) h+=`<div class="abox warn">Marge faible : ~${pBal.toFixed(0)} € d'excédent estimé.</div>`;
+      h+=`<table><thead><tr><th>Mois</th><th>Relevé</th><th>kWh</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
+      annee.forEach(d=>{
+        const b=+(d.forf-d.prix).toFixed(2);
+        h+=`<tr><td>${dateLabel(d.date)}</td><td>${d.releve.toFixed(1)}</td>
+          <td><span class="badge ${badgeKwh(d.diff)}">${d.diff.toFixed(0)}</span></td>
+          <td>${d.prix.toFixed(2)}</td><td>${d.forf}</td>
+          <td style="color:${colorBal(b)}">${fmtBal(b)}</td></tr>`;
+      });
+      for(let i=1;i<=rest;i++){
+        const mi=(lastM+i)%12;
+        const pp=+(moy*S().tarifElec).toFixed(2);
+        const pb=+(lastForf-pp).toFixed(2);
+        h+=`<tr class="proj${pb<0?" alerte":""}"><td>${MOIS[mi]} ${elecYear} ✦</td><td>—</td>
+          <td>${moy.toFixed(0)}</td><td>${pp.toFixed(2)}</td><td>${lastForf}</td>
+          <td style="color:${colorBal(pb)}">${fmtBal(pb)}</td></tr>`;
+      }
+      h+=`<tr class="tot"><td>Total réel</td><td>—</td><td>${total.toFixed(0)}</td><td>${totalP.toFixed(2)}</td><td>${forfT.toFixed(0)}</td>
+        <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td></tr>`;
+      if(rest>0) h+=`<tr class="tot" style="opacity:.7"><td>Projection ✦</td><td>—</td><td>${pKwh}</td><td>${pP.toFixed(2)}</td><td>${pForf}</td>
+        <td style="color:${colorBal(pBal)}">${fmtBal(pBal)}</td></tr>`;
+      h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection = moyenne mensuelle · Forfait projeté = dernier forfait connu</p>`;
+    }
+    h+=`</div>`;
+  });
+  document.getElementById("elec-inner").innerHTML=h;
+}
+
+function renderElecAjouter(){
+  const locs=LE();
+  const sorted=[...S().elec.releves].sort(sortByDate);
+  const last=sorted.length?sorted[sorted.length-1]:null;
+  let h=`<div class="card"><div class="ctitle">➕ Nouveau relevé électricité</div>
+    <div class="fgrid"><div class="fg"><label>Date du relevé</label><input type="date" id="ef-date"/></div></div>
+    <div class="fgrid" style="margin-top:8px">`;
+  locs.forEach(loc=>{
+    h+=`<div class="fg"><label style="color:${loc.couleur}">${loc.nom} <span style="font-weight:400;color:var(--text3)">— dernier : ${last&&last[loc.id]!=null?last[loc.id]:""}</span></label>
+      <input type="number" id="ef-${loc.id}" placeholder="kWh compteur" step="0.01"/></div>`;
+  });
+  h+=`</div><button class="btn btn-p" style="margin-top:4px" onclick="ajouterElecReleve()">💾 Enregistrer</button></div>`;
+  if(sorted.length){
+    h+=`<div class="card"><div class="ctitle">📋 Historique brut</div><div style="overflow-x:auto">
+      <table><thead><tr><th>Date</th>${locs.map(l=>`<th>${l.nom.split(' ')[0]}</th>`).join("")}<th></th></tr></thead><tbody>`;
+    sorted.forEach(r=>{
+      h+=`<tr><td>${r.date}</td>${locs.map(l=>`<td>${r[l.id]!=null?r[l.id]:""}</td>`).join("")}
+        <td><button class="btn-del" onclick="supprimerElecReleve('${r.date}')">🗑</button></td></tr>`;
+    });
+    h+=`</tbody></table></div></div>`;
+  }
+  document.getElementById("elec-inner").innerHTML=h;
+  document.getElementById("ef-date").valueAsDate=new Date();
+}
+
+window.ajouterElecReleve=async function(){
+  const dv=document.getElementById("ef-date").value;
+  if(!dv){alert("Saisir une date.");return;}
+  const[y,m,d]=dv.split("-");
+  const nr={date:`${d}/${m}/${y}`};
+  let ok=true;
+  LE().forEach(loc=>{
+    const v=parseFloat(document.getElementById("ef-"+loc.id).value);
+    if(isNaN(v)) ok=false;
+    nr[loc.id]=isNaN(v)?null:v;
+  });
+  if(!ok){alert("Saisir tous les relevés.");return;}
+  S().elec.releves.push(nr);
+  S().elec.releves.sort(sortByDate);
+  await sauvegarder();
+  elecSub="releves"; renderElec();
+  alert("✅ Relevé électricité enregistré !");
+};
+
+window.supprimerElecReleve=async function(date){
+  if(!confirm("Supprimer le relevé du "+date+" ?")) return;
+  S().elec.releves=S().elec.releves.filter(r=>r.date!==date);
+  await sauvegarder(); renderElec();
 };
 
 // ════════════════════════════════════════════════════════════
 //  EAU
 // ════════════════════════════════════════════════════════════
-function W() { return S().eau; }
-function wLoc(id) { return W().locataires.find(l=>l.id===id); }
-function wDernier(id) {
-  const rels = W().releves.filter(r=>r[id]!=null).sort((a,b)=>sortDate(a,b));
-  return rels.length ? rels[rels.length-1][id] : null;
-}
-function wDiffs(id) {
-  const rels = W().releves.filter(r=>r[id]!=null).sort((a,b)=>sortDate(a,b));
-  const res=[];
-  for(let i=1;i<rels.length;i++){
-    const diff = +(rels[i][id]-rels[i-1][id]).toFixed(3);
-    const prix = +(diff*W().tarifM3).toFixed(2);
-    res.push({date:rels[i].date, releve:rels[i][id], diff, prix});
-  }
-  return res;
+function renderEau(){
+  document.getElementById("pane-eau").innerHTML=`
+    <div class="subtabs">
+      <button class="subtab ${eauSub==='releves'?'active':''}" onclick="eauSub='releves';renderEau()">📋 Relevés</button>
+      <button class="subtab ${eauSub==='annuel'?'active':''}" onclick="eauSub='annuel';renderEau()">📅 Synthèse annuelle</button>
+      <button class="subtab ${eauSub==='ajouter'?'active':''}" onclick="eauSub='ajouter';renderEau()">➕ Ajouter</button>
+    </div><div id="eau-inner"></div>`;
+  if(eauSub==='releves')     renderEauReleves();
+  else if(eauSub==='annuel') renderEauAnnuel();
+  else                       renderEauAjouter();
 }
 
-let wEauTab = 'releves';
-let wSelYear = null;
-
-function renderEau() {
-  if(!S().eau) S().eau = JSON.parse(JSON.stringify(DEFAULTS.eau));
-  const locs = W().locataires;
-
-  let h = `<div class="tabs" style="margin-bottom:1rem">
-    <button class="tab ${wEauTab==='releves'?'active':''}" onclick="wEauTab='releves';renderEau()">📝 Relevés</button>
-    <button class="tab ${wEauTab==='annuel'?'active':''}" onclick="wEauTab='annuel';renderEau()">📅 Vue annuelle</button>
-  </div>`;
-
-  if(wEauTab === 'annuel') {
-    // ── VUE ANNUELLE ──
-    const allYears = new Set();
-    locs.forEach(l => wDiffs(l.id).forEach(d => allYears.add(getYear(d.date))));
-    const years = [...allYears].sort();
-
-    if(!years.length){
-      h+=`<div class="card"><p style="color:var(--text2);font-size:13px;font-style:italic">Pas encore assez de relevés pour la vue annuelle.</p></div>`;
-    } else {
-      if(!wSelYear||!years.includes(wSelYear)) wSelYear=years[years.length-1];
-      h+=`<div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">`;
-      years.forEach(y=>h+=`<button class="ybtn ${y===wSelYear?"active":""}" onclick="wSelYear='${y}';renderEau()">${y}</button>`);
-      h+=`</div>`;
-
-      locs.forEach(l=>{
-        const diffs  = wDiffs(l.id);
-        const annee  = diffs.filter(d=>getYear(d.date)===wSelYear);
-        const rest   = 12-annee.length;
-        const total  = annee.reduce((s,d)=>s+d.diff,0);
-        const totalP = +(total*W().tarifM3).toFixed(2);
-        const forfT  = (l.forfait||0)*annee.length;
-        const bal    = +(forfT-totalP).toFixed(2);
-        const moy    = annee.length>0?total/annee.length:0;
-        const pM3    = +(total+moy*rest).toFixed(2);
-        const pP     = +(pM3*W().tarifM3).toFixed(2);
-        const pForf  = (l.forfait||0)*12;
-        const pBal   = +(pForf-pP).toFixed(2);
-        const lastM  = annee.length>0?+annee[annee.length-1].date.split("/")[1]:0;
-
-        h+=`<div class="card"><div class="ctitle" style="color:var(--blue)">💧 ${l.nom}
-          <span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${l.appart} · ${l.forfait||0} €/mois</span></div>`;
-
-        if(!annee.length){
-          h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé pour ${wSelYear}.</p>`;
-        } else {
-          if(rest>0&&pBal<0)       h+=`<div class="abox err">⚠️ Dépassement estimé : <strong>${Math.abs(pBal).toFixed(0)} €</strong> de régularisation probable sur ${wSelYear}.</div>`;
-          else if(rest>0&&pBal<10) h+=`<div class="abox warn">⚡ Marge faible : ${pBal.toFixed(0)} € d'excédent estimé.</div>`;
-
-          h+=`<table><thead><tr><th>Mois</th><th>Relevé m³</th><th>Conso m³</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
-          annee.forEach(d=>{
-            const b=+((l.forfait||0)-d.prix).toFixed(2);
-            h+=`<tr><td>${dateLabel(d.date)}</td><td>${d.releve.toFixed(2)}</td>
-              <td><span class="badge ${d.diff>10?"berr":d.diff>5?"bwarn":"bok"}">${d.diff.toFixed(2)}</span></td>
-              <td>${d.prix.toFixed(2)}</td><td>${l.forfait||0}</td>
-              <td style="color:${colorBal(b)}">${fmtBal(b)}</td></tr>`;
-          });
-          if(rest>0){
-            for(let i=1;i<=rest;i++){
-              const mi=(lastM+i)%12;
-              const pp=+(moy*W().tarifM3).toFixed(2);
-              const pb=+((l.forfait||0)-pp).toFixed(2);
-              h+=`<tr class="proj${pb<0?" alerte":""}"><td>${MOIS[mi]} ${wSelYear} ✦</td><td>—</td>
-                <td>${moy.toFixed(2)}</td><td>${pp.toFixed(2)}</td><td>${l.forfait||0}</td>
-                <td style="color:${colorBal(pb)}">${fmtBal(pb)}</td></tr>`;
-            }
-          }
-          h+=`<tr class="tot"><td>Total réel (${annee.length} mois)</td><td>—</td><td>${total.toFixed(2)} m³</td><td>${totalP.toFixed(2)}</td><td>${forfT.toFixed(0)}</td>
-            <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td></tr>`;
-          if(rest>0) h+=`<tr class="tot" style="opacity:.7"><td>Projection ✦</td><td>—</td><td>${pM3} m³</td><td>${pP.toFixed(2)}</td><td>${pForf}</td>
-            <td style="color:${colorBal(pBal)}">${fmtBal(pBal)}</td></tr>`;
-          h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection = moyenne mensuelle ${wSelYear}</p>`;
-        }
-        h+=`</div>`;
+function renderEauReleves(){
+  const locs=LW(); let h="";
+  locs.forEach(loc=>{
+    const diffs=calcEauDiffs(loc.id);
+    const tot=diffs.reduce((s,d)=>s+d.diff,0);
+    const totP=diffs.reduce((s,d)=>s+d.prix,0);
+    h+=`<div class="card"><div class="ctitle" style="color:var(--teal)">
+      💧 ${loc.nom}<span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${loc.appart} · ${S().tarifEau} €/m³</span></div>`;
+    if(!diffs.length){ h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé.</p>`; }
+    else{
+      h+=`<table><thead><tr><th>Mois</th><th>Relevé m³</th><th>Conso m³</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
+      diffs.forEach(d=>{
+        const b=+(d.forf-d.prix).toFixed(2);
+        h+=`<tr><td>${dateLabel(d.date)}</td><td>${d.releve.toFixed(2)}</td>
+          <td><span class="badge ${badgeM3(d.diff)}">${d.diff.toFixed(2)}</span></td>
+          <td>${d.prix.toFixed(2)}</td><td>${d.forf}</td>
+          <td style="color:${colorBal(b)}">${fmtBal(b)}</td></tr>`;
       });
+      h+=`<tr class="tot"><td colspan="2">Total (${diffs.length} mois)</td><td>${tot.toFixed(2)} m³</td><td>${totP.toFixed(2)} €</td><td colspan="2"></td></tr>`;
+      h+=`</tbody></table>`;
     }
-  } else {
-    // ── SAISIE + TABLEAUX ──
-    h+=`<div class="card"><div class="ctitle">📝 Nouveau relevé d'eau</div>
-      <div class="fgrid"><div class="fg"><label>Date du relevé</label><input type="date" id="w-date"/></div></div>
-      <div class="fgrid" style="margin-top:8px">`;
-    locs.forEach(l=>{
-      const der=wDernier(l.id);
-      h+=`<div class="fg">
-        <label style="color:var(--blue)">${l.nom} <span style="font-weight:400;color:var(--text3)">— ${l.appart}</span></label>
-        <label style="font-size:11px;color:var(--text3)">Dernier : ${der!=null?der+" m³":"—"}</label>
-        <input type="number" id="wr-${l.id}" placeholder="m³ compteur" step="0.001"/>
-      </div>`;
-    });
-    h+=`</div><button class="btn btn-p" style="margin-top:8px" onclick="wAjouterReleve()">💾 Enregistrer</button></div>`;
+    h+=`</div>`;
+  });
+  document.getElementById("eau-inner").innerHTML=h||`<div class="abox warn">Aucun locataire eau actif.</div>`;
+}
 
-    locs.forEach(l=>{
-      const diffs=wDiffs(l.id);
-      const tot=diffs.reduce((s,d)=>s+d.diff,0);
-      const totP=diffs.reduce((s,d)=>s+d.prix,0);
-      h+=`<div class="card"><div class="ctitle" style="color:var(--blue)">💧 ${l.nom}
-        <span style="font-size:12px;font-weight:400;color:var(--text2)">— ${l.appart} · ${l.forfait||0} €/mois · ${W().tarifM3} €/m³</span></div>`;
-      if(!diffs.length){
-        h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé.</p>`;
-      } else {
-        h+=`<table><thead><tr><th>Mois</th><th>Relevé m³</th><th>Conso m³</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
-        diffs.forEach(d=>{
-          const bal=+((l.forfait||0)-d.prix).toFixed(2);
-          h+=`<tr><td>${dateLabel(d.date)}</td><td>${d.releve.toFixed(2)}</td>
-            <td><span class="badge ${d.diff>10?"berr":d.diff>5?"bwarn":"bok"}">${d.diff.toFixed(2)}</span></td>
-            <td>${d.prix.toFixed(2)}</td><td>${l.forfait||0}</td>
-            <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td></tr>`;
-        });
-        h+=`<tr class="tot"><td colspan="2">Total (${diffs.length} mois)</td><td>${tot.toFixed(2)} m³</td><td>${totP.toFixed(2)} €</td><td colspan="2"></td></tr>`;
-        h+=`</tbody></table>`;
+function renderEauAnnuel(){
+  const locs=LW();
+  const years=new Set();
+  locs.forEach(l=>calcEauDiffs(l.id).forEach(d=>years.add(getYear(d.date))));
+  const yrs=[...years].sort();
+  if(!yrs.length){document.getElementById("eau-inner").innerHTML=`<div class="abox warn">Pas encore assez de relevés.</div>`;return;}
+  if(!eauYear||!yrs.includes(eauYear)) eauYear=yrs[yrs.length-1];
+  let h=`<div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">`;
+  yrs.forEach(y=>h+=`<button class="ybtn ${y===eauYear?"active":""}" onclick="eauYear='${y}';renderEau()">${y}</button>`);
+  h+=`</div>`;
+  locs.forEach(loc=>{
+    const diffs=calcEauDiffs(loc.id);
+    const annee=diffs.filter(d=>getYear(d.date)===eauYear);
+    const rest=12-annee.length;
+    const total=annee.reduce((s,d)=>s+d.diff,0);
+    const totalP=+(total*S().tarifEau).toFixed(2);
+    const forfT=annee.reduce((s,d)=>s+d.forf,0);
+    const bal=+(forfT-totalP).toFixed(2);
+    const moy=annee.length>0?total/annee.length:0;
+    const pM3=+(total+moy*rest).toFixed(2);
+    const pP=+(pM3*S().tarifEau).toFixed(2);
+    const lastForf=annee.length>0?annee[annee.length-1].forf:0;
+    const pForf=+(forfT+lastForf*rest).toFixed(0);
+    const pBal=+(pForf-pP).toFixed(2);
+    const lastM=annee.length>0?+annee[annee.length-1].date.split("/")[1]:0;
+    h+=`<div class="card"><div class="ctitle" style="color:var(--teal)">💧 ${loc.nom}
+      <span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${loc.appart}</span></div>`;
+    if(!annee.length){ h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé pour ${eauYear}.</p>`; }
+    else{
+      if(rest>0&&pBal<0)       h+=`<div class="abox err">⚠️ Dépassement estimé : <strong>${Math.abs(pBal).toFixed(0)} €</strong> pour ${eauYear}.</div>`;
+      else if(rest>0&&pBal<10) h+=`<div class="abox warn">Marge faible : ~${pBal.toFixed(0)} € d'excédent estimé.</div>`;
+      h+=`<table><thead><tr><th>Mois</th><th>Relevé m³</th><th>Conso m³</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
+      annee.forEach(d=>{
+        const b=+(d.forf-d.prix).toFixed(2);
+        h+=`<tr><td>${dateLabel(d.date)}</td><td>${d.releve.toFixed(2)}</td>
+          <td><span class="badge ${badgeM3(d.diff)}">${d.diff.toFixed(2)}</span></td>
+          <td>${d.prix.toFixed(2)}</td><td>${d.forf}</td>
+          <td style="color:${colorBal(b)}">${fmtBal(b)}</td></tr>`;
+      });
+      for(let i=1;i<=rest;i++){
+        const mi=(lastM+i)%12;
+        const pp=+(moy*S().tarifEau).toFixed(2);
+        const pb=+(lastForf-pp).toFixed(2);
+        h+=`<tr class="proj${pb<0?" alerte":""}"><td>${MOIS[mi]} ${eauYear} ✦</td><td>—</td>
+          <td>${moy.toFixed(2)}</td><td>${pp.toFixed(2)}</td><td>${lastForf}</td>
+          <td style="color:${colorBal(pb)}">${fmtBal(pb)}</td></tr>`;
       }
-      h+=`</div>`;
-    });
-    if(!locs.length) h+=`<div class="card"><p style="color:var(--text2);font-size:13px">Aucun locataire. Ajoutez-en dans l'onglet 👤 Locataires.</p></div>`;
-  }
+      h+=`<tr class="tot"><td>Total réel</td><td>—</td><td>${total.toFixed(2)} m³</td><td>${totalP.toFixed(2)}</td><td>${forfT.toFixed(0)}</td>
+        <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td></tr>`;
+      if(rest>0) h+=`<tr class="tot" style="opacity:.7"><td>Projection ✦</td><td>—</td><td>${pM3} m³</td><td>${pP.toFixed(2)}</td><td>${pForf}</td>
+        <td style="color:${colorBal(pBal)}">${fmtBal(pBal)}</td></tr>`;
+      h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection = moyenne mensuelle · Forfait projeté = dernier forfait connu</p>`;
+    }
+    h+=`</div>`;
+  });
+  document.getElementById("eau-inner").innerHTML=h;
+}
 
-  document.getElementById("pane-eau").innerHTML=h;
-  const wd=document.getElementById("w-date");
+function renderEauAjouter(){
+  const locs=LW();
+  const sorted=[...S().eau.releves].sort(sortByDate);
+  let h=`<div class="card"><div class="ctitle">➕ Nouveau relevé eau</div>
+    <div class="fgrid"><div class="fg"><label>Date du relevé</label><input type="date" id="wf-date"/></div></div>
+    <div class="fgrid" style="margin-top:8px">`;
+  locs.forEach(loc=>{
+    const der=eauDernier(loc.id);
+    h+=`<div class="fg"><label style="color:var(--teal)">${loc.nom} <span style="font-weight:400;color:var(--text3)">— dernier : ${der!=null?der+" m³":"—"}</span></label>
+      <input type="number" id="wf-${loc.id}" placeholder="m³ compteur" step="0.001"/></div>`;
+  });
+  h+=`</div><button class="btn btn-p" style="margin-top:8px" onclick="ajouterEauReleve()">💾 Enregistrer</button></div>`;
+  if(sorted.length){
+    h+=`<div class="card"><div class="ctitle">📋 Historique brut</div><div style="overflow-x:auto">
+      <table><thead><tr><th>Date</th>${locs.map(l=>`<th>${l.nom.split(' ')[0]}</th>`).join("")}<th></th></tr></thead><tbody>`;
+    sorted.forEach(r=>{
+      h+=`<tr><td>${r.date}</td>${locs.map(l=>`<td>${r[l.id]!=null?r[l.id]:""}</td>`).join("")}
+        <td><button class="btn-del" onclick="supprimerEauReleve('${r.date}')">🗑</button></td></tr>`;
+    });
+    h+=`</tbody></table></div></div>`;
+  }
+  if(!locs.length) h=`<div class="abox warn">Aucun locataire eau actif. Activez-en dans 👤 Locataires.</div>`;
+  document.getElementById("eau-inner").innerHTML=h;
+  const wd=document.getElementById("wf-date");
   if(wd) wd.valueAsDate=new Date();
 }
 
-window.wAjouterLoc = async function(){
-  const nom=document.getElementById("wl-nom").value.trim();
-  const appart=document.getElementById("wl-appart").value.trim();
-  const forfait=parseFloat(document.getElementById("wl-forfait").value)||0;
-  if(!nom||!appart){alert("Renseigner nom et appartement.");return;}
-  const id="w-"+Date.now();
-  S().eau.locataires.push({id,nom,appart,forfait});
-  await sauvegarder();
-  renderEau();
-};
-
-window.wSupprimerLoc = async function(id){
-  if(!confirm("Supprimer ce locataire et tous ses relevés ?")) return;
-  S().eau.locataires=S().eau.locataires.filter(l=>l.id!==id);
-  S().eau.releves=S().eau.releves.map(r=>{const nr={...r};delete nr[id];return nr;});
-  await sauvegarder();
-  renderEau();
-};
-
-window.wAjouterReleve = async function(){
-  const dv=document.getElementById("w-date").value;
+window.ajouterEauReleve=async function(){
+  const dv=document.getElementById("wf-date").value;
   if(!dv){alert("Saisir une date.");return;}
   const[y,m,d]=dv.split("-");
   const nr={date:`${d}/${m}/${y}`};
   let rempli=false;
-  W().locataires.forEach(l=>{
-    const v=parseFloat(document.getElementById("wr-"+l.id).value);
-    if(!isNaN(v)){nr[l.id]=v;rempli=true;}
+  LW().forEach(loc=>{
+    const v=parseFloat(document.getElementById("wf-"+loc.id).value);
+    if(!isNaN(v)){nr[loc.id]=v;rempli=true;}
   });
   if(!rempli){alert("Saisir au moins un relevé.");return;}
   S().eau.releves.push(nr);
-  S().eau.releves.sort(sortDate);
+  S().eau.releves.sort(sortByDate);
   await sauvegarder();
-  renderEau();
+  eauSub="releves"; renderEau();
   alert("✅ Relevé eau enregistré !");
 };
 
+window.supprimerEauReleve=async function(date){
+  if(!confirm("Supprimer le relevé du "+date+" ?")) return;
+  S().eau.releves=S().eau.releves.filter(r=>r.date!==date);
+  await sauvegarder(); renderEau();
+};
+
 // ════════════════════════════════════════════════════════════
-//  INIT — cache d'abord, JSONBin ensuite
+//  INIT
 // ════════════════════════════════════════════════════════════
 (function init(){
-  const cached = localStorage.getItem(CACHE_KEY);
-  if(cached){ try{ STATE=JSON.parse(cached); }catch(e){} }
-  if(!STATE) STATE = JSON.parse(JSON.stringify(DEFAULTS));
-  // Migration : eau absent dans anciennes données
-  if(!STATE.eau) STATE.eau = JSON.parse(JSON.stringify(DEFAULTS.eau));
-  render("dashboard"); // affichage immédiat
-  charger();           // mise à jour depuis JSONBin
+  const cached=localStorage.getItem(CACHE);
+  if(cached){ try{ setState(JSON.parse(cached)); }catch(e){} }
+  if(!STATE) setState(JSON.parse(JSON.stringify(DEFAULTS)));
+  render("board");
+  charger();
 })();
 </script>
 </body>
