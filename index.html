@@ -107,12 +107,14 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
     <button class="tab" onclick="showTab('releves')">📋 Relevés</button>
     <button class="tab" onclick="showTab('ajouter')">➕ Ajouter</button>
     <button class="tab" onclick="showTab('locataires')">👤 Locataires</button>
+    <button class="tab" onclick="showTab('eau')">💧 Eau</button>
   </div>
   <div id="pane-dashboard" class="pane active"></div>
   <div id="pane-annuel" class="pane"></div>
   <div id="pane-releves" class="pane"></div>
   <div id="pane-ajouter" class="pane"></div>
   <div id="pane-locataires" class="pane"></div>
+  <div id="pane-eau" class="pane"></div>
 </div>
 
 <script>
@@ -134,7 +136,7 @@ const APTS = [
   {id:"bureau",  name:"Bureau",             short:"Bureau",  color:"#5a45b8"},
 ];
 const MOIS = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
-const CACHE_KEY = "elec_jc_v4";
+const CACHE_KEY = "elec_jc_v5";
 
 const DEFAULTS = {
   locataires:{pizzeria:"Nicole Vidal",jardin:"Ana",etage:"Thomas / Sandy",bureau:"Emma"},
@@ -156,7 +158,18 @@ const DEFAULTS = {
     {date:"01/03/2026",pizzeria:7851.35,jardin:11767.6, etage:15920.24, bureau:1591.83},
     {date:"01/04/2026",pizzeria:8219.76,jardin:12273.85,etage:16501.95, bureau:1618.22},
     {date:"01/05/2026",pizzeria:8525.89,jardin:12769.62,etage:16914.85, bureau:1635.16},
-  ]
+  ],
+  // ── EAU ──
+  eau: {
+    tarifM3: 3.50,
+    locataires: [
+      {id:"w-pizzeria", nom:"Nicole Vidal",  appart:"Appart Bas Pizzeria", forfait:20},
+      {id:"w-jardin",   nom:"Ana",           appart:"Appart Bas Jardin",   forfait:20},
+      {id:"w-etage",    nom:"Thomas / Sandy",appart:"Appart Étage",        forfait:30},
+      {id:"w-bureau",   nom:"Emma",          appart:"Bureau",              forfait:0},
+    ],
+    releves: []
+  }
 };
 
 // ════════════════════════════════════════════════════════════
@@ -220,7 +233,7 @@ window.save = () => sauvegarder();
 // ════════════════════════════════════════════════════════════
 //  ROUTING
 // ════════════════════════════════════════════════════════════
-const TABS = ["dashboard","annuel","releves","ajouter","locataires"];
+const TABS = ["dashboard","annuel","releves","ajouter","locataires","eau"];
 
 function render(name) {
   if      (name==="dashboard")  renderDashboard();
@@ -228,6 +241,7 @@ function render(name) {
   else if (name==="releves")    renderReleves();
   else if (name==="ajouter")    renderAjouter();
   else if (name==="locataires") renderLocataires();
+  else if (name==="eau")        renderEau();
 }
 
 function refreshCurrent() {
@@ -537,6 +551,169 @@ window.sauvegarderLocataires = async function(){
   await sauvegarder();
   alert("✅ Sauvegardé !");
   renderDashboard();
+};
+
+// ════════════════════════════════════════════════════════════
+//  EAU
+// ════════════════════════════════════════════════════════════
+function W() { return S().eau; }
+function wLoc(id) { return W().locataires.find(l=>l.id===id); }
+function wDernier(id) {
+  const rels = W().releves.filter(r=>r[id]!=null).sort((a,b)=>sortDate(a,b));
+  return rels.length ? rels[rels.length-1][id] : null;
+}
+function wDiffs(id) {
+  const rels = W().releves.filter(r=>r[id]!=null).sort((a,b)=>sortDate(a,b));
+  const res=[];
+  for(let i=1;i<rels.length;i++){
+    const diff = +(rels[i][id]-rels[i-1][id]).toFixed(3);
+    const prix = +(diff*W().tarifM3).toFixed(2);
+    res.push({date:rels[i].date, releve:rels[i][id], diff, prix});
+  }
+  return res;
+}
+
+function renderEau() {
+  if(!S().eau) S().eau = JSON.parse(JSON.stringify(DEFAULTS.eau));
+  const locs = W().locataires;
+  const today = new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"});
+
+  let h = `
+  <!-- TARIF + AJOUTER LOCATAIRE -->
+  <div class="card">
+    <div class="ctitle">💧 Paramètres eau</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="fg" style="max-width:200px;margin-bottom:0">
+        <label>Tarif m³ (€)</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="w-tarif" type="number" step="0.01" value="${W().tarifM3}" style="width:90px"/>
+          <button onclick="wAppliquerTarif()" class="btn btn-p" style="padding:6px 12px;font-size:12px">OK</button>
+        </div>
+      </div>
+      <div style="margin-left:auto">
+        <button onclick="wShowAddLoc()" class="btn btn-p">➕ Ajouter un locataire</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORMULAIRE AJOUT LOCATAIRE (caché par défaut) -->
+  <div id="w-form-loc" class="card" style="display:none;border:.5px solid var(--blue)">
+    <div class="ctitle" style="color:var(--blue)">Nouveau locataire</div>
+    <div class="fgrid">
+      <div class="fg"><label>Nom</label><input id="wl-nom" type="text" placeholder="Nom du locataire"/></div>
+      <div class="fg"><label>Appartement</label><input id="wl-appart" type="text" placeholder="Ex: Appart Haut"/></div>
+      <div class="fg"><label>Forfait mensuel (€)</label><input id="wl-forfait" type="number" value="20" step="5"/></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button onclick="wAjouterLoc()" class="btn btn-p">💾 Ajouter</button>
+      <button onclick="document.getElementById('w-form-loc').style.display='none'" class="btn" style="background:var(--surface2)">Annuler</button>
+    </div>
+  </div>
+
+  <!-- NOUVEAU RELEVÉ -->
+  <div class="card">
+    <div class="ctitle">📝 Nouveau relevé d'eau</div>
+    <div class="fgrid">
+      <div class="fg"><label>Date du relevé</label><input type="date" id="w-date"/></div>
+    </div>
+    <div class="fgrid" style="margin-top:8px">`;
+
+  locs.forEach(l=>{
+    const der = wDernier(l.id);
+    h+=`<div class="fg">
+      <label style="color:var(--blue)">${l.nom} <span style="font-weight:400;color:var(--text3)">— ${l.appart}</span></label>
+      <label style="font-size:11px;color:var(--text3)">Dernier : ${der!=null?der+" m³":"—"}</label>
+      <input type="number" id="wr-${l.id}" placeholder="m³ compteur" step="0.001"/>
+    </div>`;
+  });
+
+  h+=`</div>
+    <button class="btn btn-p" style="margin-top:8px" onclick="wAjouterReleve()">💾 Enregistrer</button>
+  </div>`;
+
+  // TABLEAUX PAR LOCATAIRE
+  locs.forEach(l=>{
+    const diffs = wDiffs(l.id);
+    const tot   = diffs.reduce((s,d)=>s+d.diff,0);
+    const totP  = diffs.reduce((s,d)=>s+d.prix,0);
+    h+=`<div class="card">
+      <div class="ctitle" style="color:var(--blue);display:flex;align-items:center;justify-content:space-between">
+        <span>💧 ${l.nom} <span style="font-size:12px;font-weight:400;color:var(--text2)">— ${l.appart} · forfait ${l.forfait} €/mois</span></span>
+        <button onclick="wSupprimerLoc('${l.id}')" class="btn-del" title="Supprimer ce locataire">🗑</button>
+      </div>`;
+
+    if(!diffs.length){
+      h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé pour ce locataire.</p>`;
+    } else {
+      h+=`<table><thead><tr><th>Mois</th><th>Relevé m³</th><th>Conso m³</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
+      diffs.forEach(d=>{
+        const bal=+((l.forfait||0)-d.prix).toFixed(2);
+        h+=`<tr>
+          <td>${dateLabel(d.date)}</td>
+          <td>${d.releve.toFixed(2)}</td>
+          <td><span class="badge ${d.diff>10?"berr":d.diff>5?"bwarn":"bok"}">${d.diff.toFixed(2)}</span></td>
+          <td>${d.prix.toFixed(2)}</td>
+          <td>${l.forfait||0}</td>
+          <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td>
+        </tr>`;
+      });
+      h+=`<tr class="tot"><td colspan="2">Total (${diffs.length} mois)</td><td>${tot.toFixed(2)} m³</td><td>${totP.toFixed(2)} €</td><td colspan="2"></td></tr>`;
+      h+=`</tbody></table>`;
+    }
+    h+=`</div>`;
+  });
+
+  document.getElementById("pane-eau").innerHTML=h;
+  document.getElementById("w-date").valueAsDate=new Date();
+}
+
+window.wShowAddLoc = function(){
+  document.getElementById("w-form-loc").style.display="block";
+};
+
+window.wAppliquerTarif = async function(){
+  const v=parseFloat(document.getElementById("w-tarif").value);
+  if(isNaN(v)||v<=0){alert("Tarif invalide.");return;}
+  S().eau.tarifM3=v;
+  await sauvegarder();
+  renderEau();
+};
+
+window.wAjouterLoc = async function(){
+  const nom=document.getElementById("wl-nom").value.trim();
+  const appart=document.getElementById("wl-appart").value.trim();
+  const forfait=parseFloat(document.getElementById("wl-forfait").value)||0;
+  if(!nom||!appart){alert("Renseigner nom et appartement.");return;}
+  const id="w-"+Date.now();
+  S().eau.locataires.push({id,nom,appart,forfait});
+  await sauvegarder();
+  renderEau();
+};
+
+window.wSupprimerLoc = async function(id){
+  if(!confirm("Supprimer ce locataire et tous ses relevés ?")) return;
+  S().eau.locataires=S().eau.locataires.filter(l=>l.id!==id);
+  S().eau.releves=S().eau.releves.map(r=>{const nr={...r};delete nr[id];return nr;});
+  await sauvegarder();
+  renderEau();
+};
+
+window.wAjouterReleve = async function(){
+  const dv=document.getElementById("w-date").value;
+  if(!dv){alert("Saisir une date.");return;}
+  const[y,m,d]=dv.split("-");
+  const nr={date:`${d}/${m}/${y}`};
+  let rempli=false;
+  W().locataires.forEach(l=>{
+    const v=parseFloat(document.getElementById("wr-"+l.id).value);
+    if(!isNaN(v)){nr[l.id]=v;rempli=true;}
+  });
+  if(!rempli){alert("Saisir au moins un relevé.");return;}
+  S().eau.releves.push(nr);
+  S().eau.releves.sort(sortDate);
+  await sauvegarder();
+  renderEau();
+  alert("✅ Relevé eau enregistré !");
 };
 
 // ════════════════════════════════════════════════════════════
