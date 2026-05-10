@@ -524,20 +524,63 @@ window.supprimerReleve = async function(i){
 //  LOCATAIRES
 // ════════════════════════════════════════════════════════════
 function renderLocataires(){
-  let h=`<div class="card"><div class="ctitle">👤 Locataires & forfaits</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px">`;
+  let h=``;
+
+  // ── SECTION ÉLECTRICITÉ ──
+  h+=`<div class="card">
+    <div class="ctitle">⚡ Locataires — Électricité</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">`;
   APTS.forEach(a=>{
     h+=`<div class="card" style="margin-bottom:0;border:.5px solid ${a.color}44">
       <div class="ctitle" style="color:${a.color};margin-bottom:10px">${a.short}</div>
       <div class="fg"><label>Locataire</label><input type="text" id="loc-${a.id}" value="${S().locataires[a.id]||""}"/></div>
-      <div class="fg"><label>Forfait mensuel (€)</label><input type="number" id="forf-${a.id}" value="${S().forfaits[a.id]||0}" min="0" step="5"/></div>
+      <div class="fg"><label>Forfait élec mensuel (€)</label><input type="number" id="forf-${a.id}" value="${S().forfaits[a.id]||0}" min="0" step="5"/></div>
     </div>`;
   });
   h+=`</div>
-    <div class="fg" style="margin-top:14px;max-width:220px"><label>Tarif kWh (€)</label>
-      <input type="number" id="loc-tarif" step="0.001" value="${S().tarif}"/></div>
-    <button class="btn btn-p" style="margin-top:4px" onclick="sauvegarderLocataires()">💾 Sauvegarder</button>
+    <div class="fg" style="margin-top:14px;max-width:220px">
+      <label>Tarif kWh (€)</label>
+      <input type="number" id="loc-tarif" step="0.001" value="${S().tarif}"/>
+    </div>
+    <button class="btn btn-p" style="margin-top:4px" onclick="sauvegarderLocataires()">💾 Sauvegarder électricité</button>
   </div>`;
+
+  // ── SECTION EAU ──
+  if(!S().eau) S().eau = JSON.parse(JSON.stringify(DEFAULTS.eau));
+  const wlocs = W().locataires;
+
+  h+=`<div class="card">
+    <div class="ctitle">💧 Locataires — Eau</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">`;
+  wlocs.forEach(l=>{
+    h+=`<div class="card" style="margin-bottom:0;border:.5px solid #1a6fc444">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-weight:600;color:var(--blue)">${l.nom}</span>
+        <button onclick="wSupprimerLoc('${l.id}')" class="btn-del" title="Supprimer">🗑</button>
+      </div>
+      <div class="fg"><label>Appartement</label><input type="text" id="wloc-appart-${l.id}" value="${l.appart||""}"/></div>
+      <div class="fg"><label>Forfait eau mensuel (€)</label><input type="number" id="wloc-forf-${l.id}" value="${l.forfait||0}" min="0" step="5"/></div>
+    </div>`;
+  });
+  h+=`</div>
+    <div class="fg" style="margin-top:14px;max-width:220px">
+      <label>Tarif m³ (€)</label>
+      <input type="number" id="loc-tarif-eau" step="0.01" value="${W().tarifM3}"/>
+    </div>
+    <button class="btn btn-p" style="margin-top:4px" onclick="sauvegarderLocatairesEau()">💾 Sauvegarder eau</button>
+  </div>`;
+
+  // ── AJOUTER LOCATAIRE EAU ──
+  h+=`<div class="card" style="border:.5px solid var(--blue)44">
+    <div class="ctitle" style="color:var(--blue)">➕ Ajouter un locataire eau</div>
+    <div class="fgrid">
+      <div class="fg"><label>Nom</label><input id="wl-nom" type="text" placeholder="Nom du locataire"/></div>
+      <div class="fg"><label>Appartement</label><input id="wl-appart" type="text" placeholder="Ex: Appart Haut"/></div>
+      <div class="fg"><label>Forfait mensuel (€)</label><input id="wl-forfait" type="number" value="20" step="5"/></div>
+    </div>
+    <button onclick="wAjouterLoc()" class="btn btn-p" style="margin-top:4px">💾 Ajouter</button>
+  </div>`;
+
   document.getElementById("pane-locataires").innerHTML=h;
 }
 
@@ -549,8 +592,22 @@ window.sauvegarderLocataires = async function(){
   const t=parseFloat(document.getElementById("loc-tarif").value);
   if(!isNaN(t)&&t>0) S().tarif=t;
   await sauvegarder();
-  alert("✅ Sauvegardé !");
+  alert("✅ Électricité sauvegardée !");
   renderDashboard();
+};
+
+window.sauvegarderLocatairesEau = async function(){
+  if(!S().eau) S().eau=JSON.parse(JSON.stringify(DEFAULTS.eau));
+  W().locataires.forEach(l=>{
+    const a=document.getElementById("wloc-appart-"+l.id);
+    const f=document.getElementById("wloc-forf-"+l.id);
+    if(a) l.appart=a.value;
+    if(f) l.forfait=parseFloat(f.value)||0;
+  });
+  const t=parseFloat(document.getElementById("loc-tarif-eau").value);
+  if(!isNaN(t)&&t>0) W().tarifM3=t;
+  await sauvegarder();
+  alert("✅ Eau sauvegardée !");
 };
 
 // ════════════════════════════════════════════════════════════
@@ -576,40 +633,8 @@ function wDiffs(id) {
 function renderEau() {
   if(!S().eau) S().eau = JSON.parse(JSON.stringify(DEFAULTS.eau));
   const locs = W().locataires;
-  const today = new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"});
 
   let h = `
-  <!-- TARIF + AJOUTER LOCATAIRE -->
-  <div class="card">
-    <div class="ctitle">💧 Paramètres eau</div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div class="fg" style="max-width:200px;margin-bottom:0">
-        <label>Tarif m³ (€)</label>
-        <div style="display:flex;gap:6px;align-items:center">
-          <input id="w-tarif" type="number" step="0.01" value="${W().tarifM3}" style="width:90px"/>
-          <button onclick="wAppliquerTarif()" class="btn btn-p" style="padding:6px 12px;font-size:12px">OK</button>
-        </div>
-      </div>
-      <div style="margin-left:auto">
-        <button onclick="wShowAddLoc()" class="btn btn-p">➕ Ajouter un locataire</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- FORMULAIRE AJOUT LOCATAIRE (caché par défaut) -->
-  <div id="w-form-loc" class="card" style="display:none;border:.5px solid var(--blue)">
-    <div class="ctitle" style="color:var(--blue)">Nouveau locataire</div>
-    <div class="fgrid">
-      <div class="fg"><label>Nom</label><input id="wl-nom" type="text" placeholder="Nom du locataire"/></div>
-      <div class="fg"><label>Appartement</label><input id="wl-appart" type="text" placeholder="Ex: Appart Haut"/></div>
-      <div class="fg"><label>Forfait mensuel (€)</label><input id="wl-forfait" type="number" value="20" step="5"/></div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:4px">
-      <button onclick="wAjouterLoc()" class="btn btn-p">💾 Ajouter</button>
-      <button onclick="document.getElementById('w-form-loc').style.display='none'" class="btn" style="background:var(--surface2)">Annuler</button>
-    </div>
-  </div>
-
   <!-- NOUVEAU RELEVÉ -->
   <div class="card">
     <div class="ctitle">📝 Nouveau relevé d'eau</div>
@@ -637,13 +662,11 @@ function renderEau() {
     const tot   = diffs.reduce((s,d)=>s+d.diff,0);
     const totP  = diffs.reduce((s,d)=>s+d.prix,0);
     h+=`<div class="card">
-      <div class="ctitle" style="color:var(--blue);display:flex;align-items:center;justify-content:space-between">
-        <span>💧 ${l.nom} <span style="font-size:12px;font-weight:400;color:var(--text2)">— ${l.appart} · forfait ${l.forfait} €/mois</span></span>
-        <button onclick="wSupprimerLoc('${l.id}')" class="btn-del" title="Supprimer ce locataire">🗑</button>
+      <div class="ctitle" style="color:var(--blue)">
+        💧 ${l.nom} <span style="font-size:12px;font-weight:400;color:var(--text2)">— ${l.appart} · forfait ${l.forfait||0} €/mois · ${W().tarifM3} €/m³</span>
       </div>`;
-
     if(!diffs.length){
-      h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé pour ce locataire.</p>`;
+      h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé.</p>`;
     } else {
       h+=`<table><thead><tr><th>Mois</th><th>Relevé m³</th><th>Conso m³</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
       diffs.forEach(d=>{
@@ -663,21 +686,11 @@ function renderEau() {
     h+=`</div>`;
   });
 
+  if(!locs.length) h+=`<div class="card"><p style="color:var(--text2);font-size:13px">Aucun locataire. Ajoutez-en dans l'onglet 👤 Locataires.</p></div>`;
+
   document.getElementById("pane-eau").innerHTML=h;
   document.getElementById("w-date").valueAsDate=new Date();
 }
-
-window.wShowAddLoc = function(){
-  document.getElementById("w-form-loc").style.display="block";
-};
-
-window.wAppliquerTarif = async function(){
-  const v=parseFloat(document.getElementById("w-tarif").value);
-  if(isNaN(v)||v<=0){alert("Tarif invalide.");return;}
-  S().eau.tarifM3=v;
-  await sauvegarder();
-  renderEau();
-};
 
 window.wAjouterLoc = async function(){
   const nom=document.getElementById("wl-nom").value.trim();
