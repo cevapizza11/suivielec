@@ -632,66 +632,126 @@ function wDiffs(id) {
   return res;
 }
 
+let wEauTab = 'releves';
+let wSelYear = null;
+
 function renderEau() {
   if(!S().eau) S().eau = JSON.parse(JSON.stringify(DEFAULTS.eau));
   const locs = W().locataires;
 
-  let h = `
-  <!-- NOUVEAU RELEVÉ -->
-  <div class="card">
-    <div class="ctitle">📝 Nouveau relevé d'eau</div>
-    <div class="fgrid">
-      <div class="fg"><label>Date du relevé</label><input type="date" id="w-date"/></div>
-    </div>
-    <div class="fgrid" style="margin-top:8px">`;
-
-  locs.forEach(l=>{
-    const der = wDernier(l.id);
-    h+=`<div class="fg">
-      <label style="color:var(--blue)">${l.nom} <span style="font-weight:400;color:var(--text3)">— ${l.appart}</span></label>
-      <label style="font-size:11px;color:var(--text3)">Dernier : ${der!=null?der+" m³":"—"}</label>
-      <input type="number" id="wr-${l.id}" placeholder="m³ compteur" step="0.001"/>
-    </div>`;
-  });
-
-  h+=`</div>
-    <button class="btn btn-p" style="margin-top:8px" onclick="wAjouterReleve()">💾 Enregistrer</button>
+  let h = `<div class="tabs" style="margin-bottom:1rem">
+    <button class="tab ${wEauTab==='releves'?'active':''}" onclick="wEauTab='releves';renderEau()">📝 Relevés</button>
+    <button class="tab ${wEauTab==='annuel'?'active':''}" onclick="wEauTab='annuel';renderEau()">📅 Vue annuelle</button>
   </div>`;
 
-  // TABLEAUX PAR LOCATAIRE
-  locs.forEach(l=>{
-    const diffs = wDiffs(l.id);
-    const tot   = diffs.reduce((s,d)=>s+d.diff,0);
-    const totP  = diffs.reduce((s,d)=>s+d.prix,0);
-    h+=`<div class="card">
-      <div class="ctitle" style="color:var(--blue)">
-        💧 ${l.nom} <span style="font-size:12px;font-weight:400;color:var(--text2)">— ${l.appart} · forfait ${l.forfait||0} €/mois · ${W().tarifM3} €/m³</span>
-      </div>`;
-    if(!diffs.length){
-      h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé.</p>`;
-    } else {
-      h+=`<table><thead><tr><th>Mois</th><th>Relevé m³</th><th>Conso m³</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
-      diffs.forEach(d=>{
-        const bal=+((l.forfait||0)-d.prix).toFixed(2);
-        h+=`<tr>
-          <td>${dateLabel(d.date)}</td>
-          <td>${d.releve.toFixed(2)}</td>
-          <td><span class="badge ${d.diff>10?"berr":d.diff>5?"bwarn":"bok"}">${d.diff.toFixed(2)}</span></td>
-          <td>${d.prix.toFixed(2)}</td>
-          <td>${l.forfait||0}</td>
-          <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td>
-        </tr>`;
-      });
-      h+=`<tr class="tot"><td colspan="2">Total (${diffs.length} mois)</td><td>${tot.toFixed(2)} m³</td><td>${totP.toFixed(2)} €</td><td colspan="2"></td></tr>`;
-      h+=`</tbody></table>`;
-    }
-    h+=`</div>`;
-  });
+  if(wEauTab === 'annuel') {
+    // ── VUE ANNUELLE ──
+    const allYears = new Set();
+    locs.forEach(l => wDiffs(l.id).forEach(d => allYears.add(getYear(d.date))));
+    const years = [...allYears].sort();
 
-  if(!locs.length) h+=`<div class="card"><p style="color:var(--text2);font-size:13px">Aucun locataire. Ajoutez-en dans l'onglet 👤 Locataires.</p></div>`;
+    if(!years.length){
+      h+=`<div class="card"><p style="color:var(--text2);font-size:13px;font-style:italic">Pas encore assez de relevés pour la vue annuelle.</p></div>`;
+    } else {
+      if(!wSelYear||!years.includes(wSelYear)) wSelYear=years[years.length-1];
+      h+=`<div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">`;
+      years.forEach(y=>h+=`<button class="ybtn ${y===wSelYear?"active":""}" onclick="wSelYear='${y}';renderEau()">${y}</button>`);
+      h+=`</div>`;
+
+      locs.forEach(l=>{
+        const diffs  = wDiffs(l.id);
+        const annee  = diffs.filter(d=>getYear(d.date)===wSelYear);
+        const rest   = 12-annee.length;
+        const total  = annee.reduce((s,d)=>s+d.diff,0);
+        const totalP = +(total*W().tarifM3).toFixed(2);
+        const forfT  = (l.forfait||0)*annee.length;
+        const bal    = +(forfT-totalP).toFixed(2);
+        const moy    = annee.length>0?total/annee.length:0;
+        const pM3    = +(total+moy*rest).toFixed(2);
+        const pP     = +(pM3*W().tarifM3).toFixed(2);
+        const pForf  = (l.forfait||0)*12;
+        const pBal   = +(pForf-pP).toFixed(2);
+        const lastM  = annee.length>0?+annee[annee.length-1].date.split("/")[1]:0;
+
+        h+=`<div class="card"><div class="ctitle" style="color:var(--blue)">💧 ${l.nom}
+          <span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${l.appart} · ${l.forfait||0} €/mois</span></div>`;
+
+        if(!annee.length){
+          h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé pour ${wSelYear}.</p>`;
+        } else {
+          if(rest>0&&pBal<0)       h+=`<div class="abox err">⚠️ Dépassement estimé : <strong>${Math.abs(pBal).toFixed(0)} €</strong> de régularisation probable sur ${wSelYear}.</div>`;
+          else if(rest>0&&pBal<10) h+=`<div class="abox warn">⚡ Marge faible : ${pBal.toFixed(0)} € d'excédent estimé.</div>`;
+
+          h+=`<table><thead><tr><th>Mois</th><th>Relevé m³</th><th>Conso m³</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
+          annee.forEach(d=>{
+            const b=+((l.forfait||0)-d.prix).toFixed(2);
+            h+=`<tr><td>${dateLabel(d.date)}</td><td>${d.releve.toFixed(2)}</td>
+              <td><span class="badge ${d.diff>10?"berr":d.diff>5?"bwarn":"bok"}">${d.diff.toFixed(2)}</span></td>
+              <td>${d.prix.toFixed(2)}</td><td>${l.forfait||0}</td>
+              <td style="color:${colorBal(b)}">${fmtBal(b)}</td></tr>`;
+          });
+          if(rest>0){
+            for(let i=1;i<=rest;i++){
+              const mi=(lastM+i)%12;
+              const pp=+(moy*W().tarifM3).toFixed(2);
+              const pb=+((l.forfait||0)-pp).toFixed(2);
+              h+=`<tr class="proj${pb<0?" alerte":""}"><td>${MOIS[mi]} ${wSelYear} ✦</td><td>—</td>
+                <td>${moy.toFixed(2)}</td><td>${pp.toFixed(2)}</td><td>${l.forfait||0}</td>
+                <td style="color:${colorBal(pb)}">${fmtBal(pb)}</td></tr>`;
+            }
+          }
+          h+=`<tr class="tot"><td>Total réel (${annee.length} mois)</td><td>—</td><td>${total.toFixed(2)} m³</td><td>${totalP.toFixed(2)}</td><td>${forfT.toFixed(0)}</td>
+            <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td></tr>`;
+          if(rest>0) h+=`<tr class="tot" style="opacity:.7"><td>Projection ✦</td><td>—</td><td>${pM3} m³</td><td>${pP.toFixed(2)}</td><td>${pForf}</td>
+            <td style="color:${colorBal(pBal)}">${fmtBal(pBal)}</td></tr>`;
+          h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection = moyenne mensuelle ${wSelYear}</p>`;
+        }
+        h+=`</div>`;
+      });
+    }
+  } else {
+    // ── SAISIE + TABLEAUX ──
+    h+=`<div class="card"><div class="ctitle">📝 Nouveau relevé d'eau</div>
+      <div class="fgrid"><div class="fg"><label>Date du relevé</label><input type="date" id="w-date"/></div></div>
+      <div class="fgrid" style="margin-top:8px">`;
+    locs.forEach(l=>{
+      const der=wDernier(l.id);
+      h+=`<div class="fg">
+        <label style="color:var(--blue)">${l.nom} <span style="font-weight:400;color:var(--text3)">— ${l.appart}</span></label>
+        <label style="font-size:11px;color:var(--text3)">Dernier : ${der!=null?der+" m³":"—"}</label>
+        <input type="number" id="wr-${l.id}" placeholder="m³ compteur" step="0.001"/>
+      </div>`;
+    });
+    h+=`</div><button class="btn btn-p" style="margin-top:8px" onclick="wAjouterReleve()">💾 Enregistrer</button></div>`;
+
+    locs.forEach(l=>{
+      const diffs=wDiffs(l.id);
+      const tot=diffs.reduce((s,d)=>s+d.diff,0);
+      const totP=diffs.reduce((s,d)=>s+d.prix,0);
+      h+=`<div class="card"><div class="ctitle" style="color:var(--blue)">💧 ${l.nom}
+        <span style="font-size:12px;font-weight:400;color:var(--text2)">— ${l.appart} · ${l.forfait||0} €/mois · ${W().tarifM3} €/m³</span></div>`;
+      if(!diffs.length){
+        h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé.</p>`;
+      } else {
+        h+=`<table><thead><tr><th>Mois</th><th>Relevé m³</th><th>Conso m³</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
+        diffs.forEach(d=>{
+          const bal=+((l.forfait||0)-d.prix).toFixed(2);
+          h+=`<tr><td>${dateLabel(d.date)}</td><td>${d.releve.toFixed(2)}</td>
+            <td><span class="badge ${d.diff>10?"berr":d.diff>5?"bwarn":"bok"}">${d.diff.toFixed(2)}</span></td>
+            <td>${d.prix.toFixed(2)}</td><td>${l.forfait||0}</td>
+            <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td></tr>`;
+        });
+        h+=`<tr class="tot"><td colspan="2">Total (${diffs.length} mois)</td><td>${tot.toFixed(2)} m³</td><td>${totP.toFixed(2)} €</td><td colspan="2"></td></tr>`;
+        h+=`</tbody></table>`;
+      }
+      h+=`</div>`;
+    });
+    if(!locs.length) h+=`<div class="card"><p style="color:var(--text2);font-size:13px">Aucun locataire. Ajoutez-en dans l'onglet 👤 Locataires.</p></div>`;
+  }
 
   document.getElementById("pane-eau").innerHTML=h;
-  document.getElementById("w-date").valueAsDate=new Date();
+  const wd=document.getElementById("w-date");
+  if(wd) wd.valueAsDate=new Date();
 }
 
 window.wAjouterLoc = async function(){
