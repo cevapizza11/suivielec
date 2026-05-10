@@ -103,13 +103,12 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
   </div>
   <div class="tabs">
     <button class="tab active" onclick="showTab('dashboard')">🏠 Bord</button>
-    <button class="tab" onclick="showTab('annuel')">📅 Annuel</button>
-    <button class="tab" onclick="showTab('releves')">📋 Relevés</button>
-    <button class="tab" onclick="showTab('ajouter')">➕ Ajouter</button>
+    <button class="tab" onclick="showTab('elec')">⚡ Électricité</button>
     <button class="tab" onclick="showTab('locataires')">👤 Locataires</button>
     <button class="tab" onclick="showTab('eau')">💧 Eau</button>
   </div>
   <div id="pane-dashboard" class="pane active"></div>
+  <div id="pane-elec" class="pane"></div>
   <div id="pane-annuel" class="pane"></div>
   <div id="pane-releves" class="pane"></div>
   <div id="pane-ajouter" class="pane"></div>
@@ -235,10 +234,11 @@ window.save = () => sauvegarder();
 // ════════════════════════════════════════════════════════════
 //  ROUTING
 // ════════════════════════════════════════════════════════════
-const TABS = ["dashboard","annuel","releves","ajouter","locataires","eau"];
+const TABS = ["dashboard","elec","locataires","eau"];
 
 function render(name) {
   if      (name==="dashboard")  renderDashboard();
+  else if (name==="elec")       renderElec();
   else if (name==="annuel")     renderAnnuel();
   else if (name==="releves")    renderReleves();
   else if (name==="ajouter")    renderAjouter();
@@ -286,6 +286,24 @@ function fmtBal(b){ return (b>=0?"+":"")+b.toFixed(2); }
 function dateLabel(dateStr){
   const[d,m,y]=dateStr.split("/");
   return `${MOIS[+m-1]} ${y}<br><span style="font-size:10px;color:var(--text3)">relevé le ${d}/${m}</span>`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  ÉLECTRICITÉ (onglet principal avec sous-onglets)
+// ════════════════════════════════════════════════════════════
+let elecTab = 'releves';
+
+function renderElec() {
+  const pane = document.getElementById("pane-elec");
+  pane.innerHTML = `<div class="tabs" style="margin-bottom:1rem">
+    <button class="tab ${elecTab==='releves'?'active':''}" onclick="elecTab='releves';renderElec()">📋 Relevés</button>
+    <button class="tab ${elecTab==='annuel'?'active':''}" onclick="elecTab='annuel';renderElec()">📅 Vue annuelle</button>
+    <button class="tab ${elecTab==='ajouter'?'active':''}" onclick="elecTab='ajouter';renderElec()">➕ Ajouter</button>
+  </div><div id="pane-elec-inner"></div>`;
+
+  if      (elecTab==='releves') renderReleves('pane-elec-inner');
+  else if (elecTab==='annuel')  renderAnnuel('pane-elec-inner');
+  else if (elecTab==='ajouter') renderAjouter('pane-elec-inner');
 }
 
 // ════════════════════════════════════════════════════════════
@@ -357,7 +375,8 @@ window.appliquerTarif = async function(){
 // ════════════════════════════════════════════════════════════
 let selYear = null;
 window.renderAnnuel = renderAnnuel;
-function renderAnnuel() {
+function renderAnnuel(targetId) {
+  const target = targetId || 'pane-annuel';
   const years = getYears();
   if(!selYear||!years.includes(selYear)) selYear=years[years.length-1];
   const diffs = calcDiffs(S().releves);
@@ -413,7 +432,7 @@ function renderAnnuel() {
       <td style="color:${colorBal(pBal)}">${fmtBal(pBal)}</td></tr>`;
     h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection = moyenne mensuelle ${selYear}</p></div>`;
   });
-  document.getElementById("pane-annuel").innerHTML = h;
+  document.getElementById(target).innerHTML = h;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -439,7 +458,8 @@ function getAlertes(){
 // ════════════════════════════════════════════════════════════
 //  RELEVÉS
 // ════════════════════════════════════════════════════════════
-function renderReleves(){
+function renderReleves(targetId){
+  const target = targetId || 'pane-releves';
   const diffs=calcDiffs(S().releves);
   let h="";
   APTS.forEach(a=>{
@@ -463,13 +483,14 @@ function renderReleves(){
     h+=`<tr class="tot"><td colspan="2">Total (${diffs.length} mois)</td><td>${tot.toFixed(0)}</td><td>${totP.toFixed(2)}</td><td colspan="2"></td></tr>
     </tbody></table></div>`;
   });
-  document.getElementById("pane-releves").innerHTML=h;
+  document.getElementById(target).innerHTML=h;
 }
 
 // ════════════════════════════════════════════════════════════
 //  AJOUTER
 // ════════════════════════════════════════════════════════════
-function renderAjouter(){
+function renderAjouter(targetId){
+  const target = targetId || 'pane-ajouter';
   const last=S().releves[S().releves.length-1];
   let h=`<div class="card"><div class="ctitle">➕ Nouveau relevé</div>
     <div class="fgrid">
@@ -490,7 +511,7 @@ function renderAjouter(){
       <td><button class="btn-del" onclick="supprimerReleve(${i})">🗑</button></td></tr>`;
   });
   h+=`</tbody></table></div></div>`;
-  document.getElementById("pane-ajouter").innerHTML=h;
+  document.getElementById(target).innerHTML=h;
   document.getElementById("f-date").valueAsDate=new Date();
 }
 
@@ -511,7 +532,7 @@ window.ajouterReleve = async function(){
   S().releves.push(nr);
   S().releves.sort(sortDate);
   await sauvegarder();
-  renderAjouter();
+  renderElec();
   alert("✅ Relevé enregistré !");
 };
 
@@ -519,7 +540,7 @@ window.supprimerReleve = async function(i){
   if(!confirm("Supprimer ?")) return;
   S().releves.splice(i,1);
   await sauvegarder();
-  renderAjouter();
+  renderElec();
 };
 
 // ════════════════════════════════════════════════════════════
