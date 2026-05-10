@@ -202,6 +202,8 @@ async function charger() {
       // Bin vide : on pousse les données par défaut
       await sauvegarder(STATE || JSON.parse(JSON.stringify(DEFAULTS)));
     } else {
+      // Si eau absent (anciennes données), on l'ajoute
+      if (!rec.eau) rec.eau = JSON.parse(JSON.stringify(DEFAULTS.eau));
       setState(rec);
       syncOk();
       refreshCurrent();
@@ -736,6 +738,8 @@ window.wAjouterReleve = async function(){
   const cached = localStorage.getItem(CACHE_KEY);
   if(cached){ try{ STATE=JSON.parse(cached); }catch(e){} }
   if(!STATE) STATE = JSON.parse(JSON.stringify(DEFAULTS));
+  // Migration : eau absent dans anciennes données
+  if(!STATE.eau) STATE.eau = JSON.parse(JSON.stringify(DEFAULTS.eau));
   render("dashboard"); // affichage immédiat
   charger();           // mise à jour depuis JSONBin
 })();
