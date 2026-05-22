@@ -341,7 +341,8 @@ function calcElecDiffs(locId){
     const diff=+(rels[i][locId]-rels[i-1][locId]).toFixed(2);
     const prix=+(diff*S().tarifElec).toFixed(2);
     const forf=getForfait(loc.elec.forfaits,rels[i].date);
-    res.push({date:rels[i].date,releve:rels[i][locId],diff,prix,forf});
+    const photo=rels[i].photo||null;
+    res.push({date:rels[i].date,releve:rels[i][locId],diff,prix,forf,photo});
   }
   return res;
 }
@@ -356,7 +357,8 @@ function calcEauDiffs(locId){
     const diff=+(rels[i][locId]-rels[i-1][locId]).toFixed(3);
     const prix=+(diff*S().tarifEau).toFixed(2);
     const forf=getForfait(loc.eau.forfaits,rels[i].date);
-    res.push({date:rels[i].date,releve:rels[i][locId],diff,prix,forf});
+    const photo=rels[i].photo||null;
+    res.push({date:rels[i].date,releve:rels[i][locId],diff,prix,forf,photo});
   }
   return res;
 }
