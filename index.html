@@ -719,7 +719,13 @@ function renderElecReleves(){
           <td><span class="badge ${badgeKwh(d.diff)}">${d.diff.toFixed(0)}</span></td>
           <td>${d.prix.toFixed(2)}</td><td>${d.forf}</td>
           <td style="color:${colorBal(b)}">${fmtBal(b)}</td>
-          <td>${photo?`<a href="${photo}" target="_blank" style="font-size:11px;color:var(--blue)">📷 Voir</a>`:`<div style="display:flex;gap:3px"><input type="text" id="ephoto-${d.date.replace(/\//g,'-')}" placeholder="Lien Drive" style="width:75px;font-size:10px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:2px 4px;color:var(--text);font-family:inherit;outline:none"/><button onclick="setElecPhoto('${d.date}')" style="padding:2px 5px;background:var(--blue);color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">✓</button></div>`}</td>
+          <td>${photo
+            ?`<div style="display:flex;gap:3px;align-items:center">
+                <a href="${photo}" target="_blank" style="font-size:11px;color:var(--blue)">📷 Voir</a>
+                <button onclick="editElecPhoto('${d.date}')" style="padding:1px 5px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer;color:var(--text2)">✏️</button>
+              </div>`
+            :`<div style="display:flex;gap:3px"><input type="text" id="ephoto-${d.date.replace(/\//g,'-')}" placeholder="Lien Drive" style="width:75px;font-size:10px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:2px 4px;color:var(--text);font-family:inherit;outline:none"/><button onclick="setElecPhoto('${d.date}')" style="padding:2px 5px;background:var(--blue);color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">✓</button></div>`
+          }</td>
           <td><button class="btn-del" onclick="supprimerElecReleveDate('${loc.id}','${d.date}')">🗑</button></td>
         </tr>`;
       });
@@ -874,7 +880,13 @@ function renderEauReleves(){
           <td><span class="badge ${badgeM3(d.diff)}">${d.diff.toFixed(2)}</span></td>
           <td>${d.prix.toFixed(2)}</td><td>${d.forf}</td>
           <td style="color:${colorBal(b)}">${fmtBal(b)}</td>
-          <td>${photo?`<a href="${photo}" target="_blank" style="font-size:11px;color:var(--blue)">📷 Voir</a>`:`<div style="display:flex;gap:3px"><input type="text" id="wphoto-${d.date.replace(/\//g,'-')}" placeholder="Lien Drive" style="width:75px;font-size:10px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:2px 4px;color:var(--text);font-family:inherit;outline:none"/><button onclick="setEauPhoto('${d.date}')" style="padding:2px 5px;background:var(--teal);color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">✓</button></div>`}</td>
+          <td>${photo
+            ?`<div style="display:flex;gap:3px;align-items:center">
+                <a href="${photo}" target="_blank" style="font-size:11px;color:var(--blue)">📷 Voir</a>
+                <button onclick="editEauPhoto('${d.date}')" style="padding:1px 5px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;font-size:10px;cursor:pointer;color:var(--text2)">✏️</button>
+              </div>`
+            :`<div style="display:flex;gap:3px"><input type="text" id="wphoto-${d.date.replace(/\//g,'-')}" placeholder="Lien Drive" style="width:75px;font-size:10px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:2px 4px;color:var(--text);font-family:inherit;outline:none"/><button onclick="setEauPhoto('${d.date}')" style="padding:2px 5px;background:var(--teal);color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">✓</button></div>`
+          }</td>
           <td><button class="btn-del" onclick="supprimerEauReleveDate('${loc.id}','${d.date}')">🗑</button></td>
         </tr>`;
       });
@@ -1014,7 +1026,27 @@ window.setElecPhoto=async function(date,url){
   if(r&&url.trim()){ r.photo=url.trim(); await sauvegarder(); renderElecReleves(); }
 };
 
-window.setElecPhoto=async function(date){
+window.editElecPhoto=async function(date){
+  const r=S().elec.releves.find(r=>r.date===date);
+  if(!r) return;
+  const nouveau=prompt("Nouveau lien photo Drive :",r.photo||"");
+  if(nouveau===null) return; // annulé
+  if(nouveau.trim()==="") delete r.photo;
+  else r.photo=nouveau.trim();
+  await sauvegarder();
+  renderElecReleves();
+};
+
+window.editEauPhoto=async function(date){
+  const r=S().eau.releves.find(r=>r.date===date);
+  if(!r) return;
+  const nouveau=prompt("Nouveau lien photo Drive :",r.photo||"");
+  if(nouveau===null) return;
+  if(nouveau.trim()==="") delete r.photo;
+  else r.photo=nouveau.trim();
+  await sauvegarder();
+  renderEauReleves();
+};
   const id="ephoto-"+date.replace(/\//g,'-');
   const el=document.getElementById(id);
   if(!el){alert("Champ introuvable.");return;}
