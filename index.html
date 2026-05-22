@@ -717,7 +717,7 @@ function renderElecReleves(){
           <td><span class="badge ${badgeKwh(d.diff)}">${d.diff.toFixed(0)}</span></td>
           <td>${d.prix.toFixed(2)}</td><td>${d.forf}</td>
           <td style="color:${colorBal(b)}">${fmtBal(b)}</td>
-          <td>${photo?`<a href="${photo}" target="_blank" style="font-size:11px;color:var(--blue)">📷 Voir</a>`:`<input type="text" placeholder="Lien Drive" value="" style="width:80px;font-size:10px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:2px 4px;color:var(--text);font-family:inherit;outline:none" onchange="setElecPhoto('${d.date}',this.value)"/>`}</td>
+          <td>${photo?`<a href="${photo}" target="_blank" style="font-size:11px;color:var(--blue)">📷 Voir</a>`:`<div style="display:flex;gap:3px"><input type="text" id="ephoto-${d.date.replace(/\//g,'-')}" placeholder="Lien Drive" style="width:75px;font-size:10px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:2px 4px;color:var(--text);font-family:inherit;outline:none"/><button onclick="setElecPhoto('${d.date}')" style="padding:2px 5px;background:var(--blue);color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">✓</button></div>`}</td>
           <td><button class="btn-del" onclick="supprimerElecReleveDate('${loc.id}','${d.date}')">🗑</button></td>
         </tr>`;
       });
@@ -872,7 +872,7 @@ function renderEauReleves(){
           <td><span class="badge ${badgeM3(d.diff)}">${d.diff.toFixed(2)}</span></td>
           <td>${d.prix.toFixed(2)}</td><td>${d.forf}</td>
           <td style="color:${colorBal(b)}">${fmtBal(b)}</td>
-          <td>${photo?`<a href="${photo}" target="_blank" style="font-size:11px;color:var(--blue)">📷 Voir</a>`:`<input type="text" placeholder="Lien Drive" value="" style="width:80px;font-size:10px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:2px 4px;color:var(--text);font-family:inherit;outline:none" onchange="setEauPhoto('${d.date}',this.value)"/>`}</td>
+          <td>${photo?`<a href="${photo}" target="_blank" style="font-size:11px;color:var(--blue)">📷 Voir</a>`:`<div style="display:flex;gap:3px"><input type="text" id="wphoto-${d.date.replace(/\//g,'-')}" placeholder="Lien Drive" style="width:75px;font-size:10px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:2px 4px;color:var(--text);font-family:inherit;outline:none"/><button onclick="setEauPhoto('${d.date}')" style="padding:2px 5px;background:var(--teal);color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">✓</button></div>`}</td>
           <td><button class="btn-del" onclick="supprimerEauReleveDate('${loc.id}','${d.date}')">🗑</button></td>
         </tr>`;
       });
@@ -1012,6 +1012,14 @@ window.setElecPhoto=async function(date,url){
   if(r&&url.trim()){ r.photo=url.trim(); await sauvegarder(); renderElecReleves(); }
 };
 
+window.setElecPhoto=async function(date){
+  const id="ephoto-"+date.replace(/\//g,'-');
+  const url=document.getElementById(id)?.value?.trim();
+  if(!url){alert("Colle un lien Drive d'abord.");return;}
+  const r=S().elec.releves.find(r=>r.date===date);
+  if(r){ r.photo=url; await sauvegarder(); renderElecReleves(); }
+};
+
 window.modifEauReleve=async function(locId,date,val){
   const r=S().eau.releves.find(r=>r.date===date);
   if(r){ r[locId]=parseFloat(val)||r[locId]; await sauvegarder(); renderEauReleves(); }
@@ -1023,9 +1031,12 @@ window.supprimerEauReleveDate=async function(locId,date){
   if(r){ delete r[locId]; await sauvegarder(); renderEauReleves(); }
 };
 
-window.setEauPhoto=async function(date,url){
+window.setEauPhoto=async function(date){
+  const id="wphoto-"+date.replace(/\//g,'-');
+  const url=document.getElementById(id)?.value?.trim();
+  if(!url){alert("Colle un lien Drive d'abord.");return;}
   const r=S().eau.releves.find(r=>r.date===date);
-  if(r&&url.trim()){ r.photo=url.trim(); await sauvegarder(); renderEauReleves(); }
+  if(r){ r.photo=url; await sauvegarder(); renderEauReleves(); }
 };
 
 // ════════════════════════════════════════════════════════════
