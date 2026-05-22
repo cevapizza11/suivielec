@@ -1014,10 +1014,18 @@ window.setElecPhoto=async function(date,url){
 
 window.setElecPhoto=async function(date){
   const id="ephoto-"+date.replace(/\//g,'-');
-  const url=document.getElementById(id)?.value?.trim();
+  const el=document.getElementById(id);
+  if(!el){alert("Champ introuvable.");return;}
+  const url=el.value.trim();
   if(!url){alert("Colle un lien Drive d'abord.");return;}
   const r=S().elec.releves.find(r=>r.date===date);
-  if(r){ r.photo=url; await sauvegarder(); renderElecReleves(); }
+  if(r){
+    r.photo=url;
+    // Remplace le champ par le lien sans re-render complet
+    const cell=el.parentNode.parentNode;
+    cell.innerHTML=`<a href="${url}" target="_blank" style="font-size:11px;color:var(--blue)">📷 Voir</a>`;
+    await sauvegarder();
+  }
 };
 
 window.modifEauReleve=async function(locId,date,val){
@@ -1033,10 +1041,17 @@ window.supprimerEauReleveDate=async function(locId,date){
 
 window.setEauPhoto=async function(date){
   const id="wphoto-"+date.replace(/\//g,'-');
-  const url=document.getElementById(id)?.value?.trim();
+  const el=document.getElementById(id);
+  if(!el){alert("Champ introuvable.");return;}
+  const url=el.value.trim();
   if(!url){alert("Colle un lien Drive d'abord.");return;}
   const r=S().eau.releves.find(r=>r.date===date);
-  if(r){ r.photo=url; await sauvegarder(); renderEauReleves(); }
+  if(r){
+    r.photo=url;
+    const cell=el.parentNode.parentNode;
+    cell.innerHTML=`<a href="${url}" target="_blank" style="font-size:11px;color:var(--blue)">📷 Voir</a>`;
+    await sauvegarder();
+  }
 };
 
 // ════════════════════════════════════════════════════════════
