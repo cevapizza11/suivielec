@@ -769,8 +769,34 @@ function renderElecAnnuel(){
       <span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${loc.appart}</span></div>`;
     if(!annee.length){ h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé pour ${elecYear}.</p>`; }
     else{
-      if(rest>0&&pBal<0)       h+=`<div class="abox err">⚠️ Dépassement estimé : <strong>${Math.abs(pBal).toFixed(0)} €</strong> pour ${elecYear}.</div>`;
-      else if(rest>0&&pBal<50) h+=`<div class="abox warn">Marge faible : ~${pBal.toFixed(0)} € d'excédent estimé.</div>`;
+      // Données N-1 pour projection saisonnière
+      const prevYear=String(+elecYear-1);
+      const prevDiffs=diffs.filter(d=>getYear(d.date)===prevYear);
+      // Index par numéro de mois (1-12)
+      const prevByMonth={};
+      prevDiffs.forEach(d=>{ prevByMonth[+d.date.split("/")[1]]=d.diff; });
+      const hasPrevData=prevDiffs.length>0;
+
+      // Recalcul projection saisonnière
+      let projKwhSaison=total, projForfSaison=forfT;
+      const projMois=[];
+      for(let i=1;i<=rest;i++){
+        const mNum=(lastM+i-1)%12+1; // numéro mois 1-12
+        const mi=(lastM+i)%12;       // index MOIS 0-11
+        const kwh=hasPrevData&&prevByMonth[mNum]!=null ? prevByMonth[mNum] : moy;
+        const pp=+(kwh*S().tarifElec).toFixed(2);
+        const pb=+(lastForf-pp).toFixed(2);
+        const source=hasPrevData&&prevByMonth[mNum]!=null?"N-1":"moy";
+        projKwhSaison+=kwh;
+        projForfSaison+=lastForf;
+        projMois.push({mi,mNum,kwh,pp,pb,source});
+      }
+      const pPSaison=+(projKwhSaison*S().tarifElec).toFixed(2);
+      const pBalSaison=+(projForfSaison-pPSaison).toFixed(2);
+
+      if(rest>0&&pBalSaison<0)       h+=`<div class="abox err">⚠️ Dépassement estimé : <strong>${Math.abs(pBalSaison).toFixed(0)} €</strong> pour ${elecYear}.</div>`;
+      else if(rest>0&&pBalSaison<50) h+=`<div class="abox warn">Marge faible : ~${pBalSaison.toFixed(0)} € d'excédent estimé.</div>`;
+
       h+=`<table><thead><tr><th>Mois</th><th>Relevé</th><th>kWh</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
       annee.forEach(d=>{
         const b=+(d.forf-d.prix).toFixed(2);
@@ -779,19 +805,20 @@ function renderElecAnnuel(){
           <td>${d.prix.toFixed(2)}</td><td>${d.forf}</td>
           <td style="color:${colorBal(b)}">${fmtBal(b)}</td></tr>`;
       });
-      for(let i=1;i<=rest;i++){
-        const mi=(lastM+i)%12;
-        const pp=+(moy*S().tarifElec).toFixed(2);
-        const pb=+(lastForf-pp).toFixed(2);
-        h+=`<tr class="proj${pb<0?" alerte":""}"><td>${MOIS[mi]} ${elecYear} ✦</td><td>—</td>
-          <td>${moy.toFixed(0)}</td><td>${pp.toFixed(2)}</td><td>${lastForf}</td>
-          <td style="color:${colorBal(pb)}">${fmtBal(pb)}</td></tr>`;
-      }
+      projMois.forEach(p=>{
+        h+=`<tr class="proj${p.pb<0?" alerte":""}">
+          <td>${MOIS[p.mi]} ${elecYear} <span style="font-size:10px;color:var(--text3)">${p.source==='N-1'?'('+prevYear+')':'(moy)'}</span></td>
+          <td>—</td>
+          <td>${p.kwh.toFixed(0)}</td>
+          <td>${p.pp.toFixed(2)}</td>
+          <td>${lastForf}</td>
+          <td style="color:${colorBal(p.pb)}">${fmtBal(p.pb)}</td></tr>`;
+      });
       h+=`<tr class="tot"><td>Total réel</td><td>—</td><td>${total.toFixed(0)}</td><td>${totalP.toFixed(2)}</td><td>${forfT.toFixed(0)}</td>
         <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td></tr>`;
-      if(rest>0) h+=`<tr class="tot" style="opacity:.7"><td>Projection ✦</td><td>—</td><td>${pKwh}</td><td>${pP.toFixed(2)}</td><td>${pForf}</td>
-        <td style="color:${colorBal(pBal)}">${fmtBal(pBal)}</td></tr>`;
-      h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection = moyenne mensuelle · Forfait projeté = dernier forfait connu</p>`;
+      if(rest>0) h+=`<tr class="tot" style="opacity:.7"><td>Projection année</td><td>—</td><td>${projKwhSaison.toFixed(0)}</td><td>${pPSaison.toFixed(2)}</td><td>${projForfSaison.toFixed(0)}</td>
+        <td style="color:${colorBal(pBalSaison)}">${fmtBal(pBalSaison)}</td></tr>`;
+      h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection saisonnière basée sur ${prevYear} · (moy) = fallback si pas de données N-1</p>`;
     }
     h+=`</div>`;
   });
@@ -933,8 +960,32 @@ function renderEauAnnuel(){
       <span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${loc.appart}</span></div>`;
     if(!annee.length){ h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé pour ${eauYear}.</p>`; }
     else{
-      if(rest>0&&pBal<0)       h+=`<div class="abox err">⚠️ Dépassement estimé : <strong>${Math.abs(pBal).toFixed(0)} €</strong> pour ${eauYear}.</div>`;
-      else if(rest>0&&pBal<10) h+=`<div class="abox warn">Marge faible : ~${pBal.toFixed(0)} € d'excédent estimé.</div>`;
+      // Projection saisonnière N-1
+      const prevYearW=String(+eauYear-1);
+      const prevDiffsW=calcEauDiffs(loc.id).filter(d=>getYear(d.date)===prevYearW);
+      const prevByMonthW={};
+      prevDiffsW.forEach(d=>{ prevByMonthW[+d.date.split("/")[1]]=d.diff; });
+      const hasPrevW=prevDiffsW.length>0;
+
+      let projM3Saison=total, projForfSaisonW=forfT;
+      const projMoisW=[];
+      for(let i=1;i<=rest;i++){
+        const mNum=(lastM+i-1)%12+1;
+        const mi=(lastM+i)%12;
+        const m3=hasPrevW&&prevByMonthW[mNum]!=null ? prevByMonthW[mNum] : moy;
+        const pp=+(m3*S().tarifEau).toFixed(2);
+        const pb=+(lastForf-pp).toFixed(2);
+        const source=hasPrevW&&prevByMonthW[mNum]!=null?"N-1":"moy";
+        projM3Saison+=m3;
+        projForfSaisonW+=lastForf;
+        projMoisW.push({mi,mNum,m3,pp,pb,source});
+      }
+      const pPSaisonW=+(projM3Saison*S().tarifEau).toFixed(2);
+      const pBalSaisonW=+(projForfSaisonW-pPSaisonW).toFixed(2);
+
+      if(rest>0&&pBalSaisonW<0)       h+=`<div class="abox err">⚠️ Dépassement estimé : <strong>${Math.abs(pBalSaisonW).toFixed(0)} €</strong> pour ${eauYear}.</div>`;
+      else if(rest>0&&pBalSaisonW<10) h+=`<div class="abox warn">Marge faible : ~${pBalSaisonW.toFixed(0)} € d'excédent estimé.</div>`;
+
       h+=`<table><thead><tr><th>Mois</th><th>Relevé m³</th><th>Conso m³</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
       annee.forEach(d=>{
         const b=+(d.forf-d.prix).toFixed(2);
@@ -943,19 +994,20 @@ function renderEauAnnuel(){
           <td>${d.prix.toFixed(2)}</td><td>${d.forf}</td>
           <td style="color:${colorBal(b)}">${fmtBal(b)}</td></tr>`;
       });
-      for(let i=1;i<=rest;i++){
-        const mi=(lastM+i)%12;
-        const pp=+(moy*S().tarifEau).toFixed(2);
-        const pb=+(lastForf-pp).toFixed(2);
-        h+=`<tr class="proj${pb<0?" alerte":""}"><td>${MOIS[mi]} ${eauYear} ✦</td><td>—</td>
-          <td>${moy.toFixed(2)}</td><td>${pp.toFixed(2)}</td><td>${lastForf}</td>
-          <td style="color:${colorBal(pb)}">${fmtBal(pb)}</td></tr>`;
-      }
+      projMoisW.forEach(p=>{
+        h+=`<tr class="proj${p.pb<0?" alerte":""}">
+          <td>${MOIS[p.mi]} ${eauYear} <span style="font-size:10px;color:var(--text3)">${p.source==='N-1'?'('+prevYearW+')':'(moy)'}</span></td>
+          <td>—</td>
+          <td>${p.m3.toFixed(2)}</td>
+          <td>${p.pp.toFixed(2)}</td>
+          <td>${lastForf}</td>
+          <td style="color:${colorBal(p.pb)}">${fmtBal(p.pb)}</td></tr>`;
+      });
       h+=`<tr class="tot"><td>Total réel</td><td>—</td><td>${total.toFixed(2)} m³</td><td>${totalP.toFixed(2)}</td><td>${forfT.toFixed(0)}</td>
         <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td></tr>`;
-      if(rest>0) h+=`<tr class="tot" style="opacity:.7"><td>Projection ✦</td><td>—</td><td>${pM3} m³</td><td>${pP.toFixed(2)}</td><td>${pForf}</td>
-        <td style="color:${colorBal(pBal)}">${fmtBal(pBal)}</td></tr>`;
-      h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection = moyenne mensuelle · Forfait projeté = dernier forfait connu</p>`;
+      if(rest>0) h+=`<tr class="tot" style="opacity:.7"><td>Projection année</td><td>—</td><td>${projM3Saison.toFixed(2)} m³</td><td>${pPSaisonW.toFixed(2)}</td><td>${projForfSaisonW.toFixed(0)}</td>
+        <td style="color:${colorBal(pBalSaisonW)}">${fmtBal(pBalSaisonW)}</td></tr>`;
+      h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection saisonnière basée sur ${prevYearW} · (moy) = fallback si pas de données N-1</p>`;
     }
     h+=`</div>`;
   });
