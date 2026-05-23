@@ -782,7 +782,7 @@ function renderElecAnnuel(){
       const projMois=[];
       for(let i=1;i<=rest;i++){
         const mNum=(lastM+i-1)%12+1; // numéro mois 1-12
-        const mi=(lastM+i)%12;       // index MOIS 0-11
+        const mi=mNum-1;              // index MOIS 0-11
         const kwh=hasPrevData&&prevByMonth[mNum]!=null ? prevByMonth[mNum] : moy;
         const pp=+(kwh*S().tarifElec).toFixed(2);
         const pb=+(lastForf-pp).toFixed(2);
@@ -971,7 +971,7 @@ function renderEauAnnuel(){
       const projMoisW=[];
       for(let i=1;i<=rest;i++){
         const mNum=(lastM+i-1)%12+1;
-        const mi=(lastM+i)%12;
+        const mi=mNum-1;
         const m3=hasPrevW&&prevByMonthW[mNum]!=null ? prevByMonthW[mNum] : moy;
         const pp=+(m3*S().tarifEau).toFixed(2);
         const pb=+(lastForf-pp).toFixed(2);
