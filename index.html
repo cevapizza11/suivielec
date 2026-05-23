@@ -814,8 +814,30 @@ function renderElecAnnuel(){
           <td>${lastForf}</td>
           <td style="color:${colorBal(p.pb)}">${fmtBal(p.pb)}</td></tr>`;
       });
-      h+=`<tr class="tot"><td>Total réel</td><td>—</td><td>${total.toFixed(0)}</td><td>${totalP.toFixed(2)}</td><td>${forfT.toFixed(0)}</td>
-        <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td></tr>`;
+      // Total N-1 sur la même période (même nombre de mois)
+      const prevTotalKwh=annee.reduce((s,d)=>{
+        const mNum=+d.date.split("/")[1];
+        return s+(prevByMonth[mNum]!=null?prevByMonth[mNum]:0);
+      },0);
+      const prevTotalP=+(prevTotalKwh*S().tarifElec).toFixed(2);
+      const hasPrevTotal=prevDiffs.length>0;
+      const diffPct=hasPrevTotal&&prevTotalKwh>0?+(((total-prevTotalKwh)/prevTotalKwh)*100).toFixed(1):null;
+
+      h+=`<tr class="tot">
+        <td>Total réel (${annee.length} mois)</td><td>—</td>
+        <td>${total.toFixed(0)} kWh
+          ${hasPrevTotal?`<span style="font-size:10px;color:var(--text3);display:block">${prevYear} : ${prevTotalKwh.toFixed(0)} kWh
+            <span style="color:${diffPct!=null?(diffPct>0?'var(--err)':'var(--ok)'):'var(--text3)'}">
+              ${diffPct!=null?(diffPct>0?'▲':'▼')+Math.abs(diffPct)+'%':''}
+            </span>
+          </span>`:''}
+        </td>
+        <td>${totalP.toFixed(2)} €
+          ${hasPrevTotal?`<span style="font-size:10px;color:var(--text3);display:block">${prevYear} : ${prevTotalP.toFixed(2)} €</span>`:''}
+        </td>
+        <td>${forfT.toFixed(0)}</td>
+        <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td>
+      </tr>`;
       if(rest>0) h+=`<tr class="tot" style="opacity:.7"><td>Projection année</td><td>—</td><td>${projKwhSaison.toFixed(0)}</td><td>${pPSaison.toFixed(2)}</td><td>${projForfSaison.toFixed(0)}</td>
         <td style="color:${colorBal(pBalSaison)}">${fmtBal(pBalSaison)}</td></tr>`;
       h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection saisonnière basée sur ${prevYear} · (moy) = fallback si pas de données N-1</p>`;
@@ -1003,8 +1025,29 @@ function renderEauAnnuel(){
           <td>${lastForf}</td>
           <td style="color:${colorBal(p.pb)}">${fmtBal(p.pb)}</td></tr>`;
       });
-      h+=`<tr class="tot"><td>Total réel</td><td>—</td><td>${total.toFixed(2)} m³</td><td>${totalP.toFixed(2)}</td><td>${forfT.toFixed(0)}</td>
-        <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td></tr>`;
+      // Total N-1 même période eau
+      const prevTotalM3=annee.reduce((s,d)=>{
+        const mNum=+d.date.split("/")[1];
+        return s+(prevByMonthW[mNum]!=null?prevByMonthW[mNum]:0);
+      },0);
+      const prevTotalPW=+(prevTotalM3*S().tarifEau).toFixed(2);
+      const diffPctW=hasPrevW&&prevTotalM3>0?+(((total-prevTotalM3)/prevTotalM3)*100).toFixed(1):null;
+
+      h+=`<tr class="tot">
+        <td>Total réel (${annee.length} mois)</td><td>—</td>
+        <td>${total.toFixed(2)} m³
+          ${hasPrevW?`<span style="font-size:10px;color:var(--text3);display:block">${prevYearW} : ${prevTotalM3.toFixed(2)} m³
+            <span style="color:${diffPctW!=null?(diffPctW>0?'var(--err)':'var(--ok)'):'var(--text3)'}">
+              ${diffPctW!=null?(diffPctW>0?'▲':'▼')+Math.abs(diffPctW)+'%':''}
+            </span>
+          </span>`:''}
+        </td>
+        <td>${totalP.toFixed(2)} €
+          ${hasPrevW?`<span style="font-size:10px;color:var(--text3);display:block">${prevYearW} : ${prevTotalPW.toFixed(2)} €</span>`:''}
+        </td>
+        <td>${forfT.toFixed(0)}</td>
+        <td style="color:${colorBal(bal)}">${fmtBal(bal)}</td>
+      </tr>`;
       if(rest>0) h+=`<tr class="tot" style="opacity:.7"><td>Projection année</td><td>—</td><td>${projM3Saison.toFixed(2)} m³</td><td>${pPSaisonW.toFixed(2)}</td><td>${projForfSaisonW.toFixed(0)}</td>
         <td style="color:${colorBal(pBalSaisonW)}">${fmtBal(pBalSaisonW)}</td></tr>`;
       h+=`</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">✦ Projection saisonnière basée sur ${prevYearW} · (moy) = fallback si pas de données N-1</p>`;
