@@ -797,13 +797,22 @@ function renderElecAnnuel(){
       if(rest>0&&pBalSaison<0)       h+=`<div class="abox err">⚠️ Dépassement estimé : <strong>${Math.abs(pBalSaison).toFixed(0)} €</strong> pour ${elecYear}.</div>`;
       else if(rest>0&&pBalSaison<50) h+=`<div class="abox warn">Marge faible : ~${pBalSaison.toFixed(0)} € d'excédent estimé.</div>`;
 
-      h+=`<table><thead><tr><th>Mois</th><th>Relevé</th><th>kWh</th><th>Coût €</th><th>Forfait €</th><th>Balance</th></tr></thead><tbody>`;
+      h+=`<table><thead><tr><th>Mois</th><th>Relevé</th><th>kWh</th><th>Coût €</th><th>Forfait €</th><th>Balance</th><th>✅ Payé</th></tr></thead><tbody>`;
       annee.forEach(d=>{
         const b=+(d.forf-d.prix).toFixed(2);
-        h+=`<tr><td>${dateLabel(d.date)}</td><td>${d.releve.toFixed(1)}</td>
+        const paye=getElecPaye(loc.id,d.date);
+        h+=`<tr style="opacity:${paye?'.6':'1'}">
+          <td>${dateLabel(d.date)}</td><td>${d.releve.toFixed(1)}</td>
           <td><span class="badge ${badgeKwh(d.diff)}">${d.diff.toFixed(0)}</span></td>
           <td>${d.prix.toFixed(2)}</td><td>${d.forf}</td>
-          <td style="color:${colorBal(b)}">${fmtBal(b)}</td></tr>`;
+          <td style="color:${colorBal(b)}">${fmtBal(b)}</td>
+          <td style="text-align:center">
+            <label style="cursor:pointer;font-size:16px" title="${paye?'Payé':'Non payé'}">
+              <input type="checkbox" ${paye?'checked':''} onchange="toggleElecPaye('${loc.id}','${d.date}',this.checked)" style="display:none"/>
+              ${paye?'✅':'⬜'}
+            </label>
+          </td>
+        </tr>`;
       });
       projMois.forEach(p=>{
         h+=`<tr class="proj${p.pb<0?" alerte":""}">
@@ -812,7 +821,8 @@ function renderElecAnnuel(){
           <td>${p.kwh.toFixed(0)}</td>
           <td>${p.pp.toFixed(2)}</td>
           <td>${lastForf}</td>
-          <td style="color:${colorBal(p.pb)}">${fmtBal(p.pb)}</td></tr>`;
+          <td style="color:${colorBal(p.pb)}">${fmtBal(p.pb)}</td>
+          <td>—</td></tr>`;
       });
       // Total N-1 sur la même période (même nombre de mois)
       const prevTotalKwh=annee.reduce((s,d)=>{
@@ -823,8 +833,9 @@ function renderElecAnnuel(){
       const hasPrevTotal=prevDiffs.length>0;
       const diffPct=hasPrevTotal&&prevTotalKwh>0?+(((total-prevTotalKwh)/prevTotalKwh)*100).toFixed(1):null;
 
+      const moisPayes=annee.filter(d=>getElecPaye(loc.id,d.date)).length;
       h+=`<tr class="tot">
-        <td>Total réel (${annee.length} mois)</td><td>—</td>
+        <td>Total réel (${annee.length} mois) <span style="font-size:10px;color:${moisPayes===annee.length?'var(--ok)':'var(--warn)'}">✅ ${moisPayes}/${annee.length} payés</span></td><td>—</td>
         <td>${total.toFixed(0)} kWh
           ${hasPrevTotal?`<span style="font-size:10px;color:var(--text3);display:block">${prevYear} : ${prevTotalKwh.toFixed(0)} kWh
             <span style="color:${diffPct!=null?(diffPct>0?'var(--err)':'var(--ok)'):'var(--text3)'}">
@@ -1169,6 +1180,23 @@ window.supprimerEauReleveDate=async function(locId,date){
   if(!confirm("Supprimer la valeur du "+date+" pour ce locataire ?")) return;
   const r=S().eau.releves.find(r=>r.date===date);
   if(r){ delete r[locId]; await sauvegarder(); renderEauReleves(); }
+};
+
+// ════════════════════════════════════════════════════════════
+//  PAIEMENTS ÉLECTRICITÉ
+// ════════════════════════════════════════════════════════════
+function getElecPaye(locId,date){
+  if(!S().paiementsElec) return false;
+  return !!(S().paiementsElec[locId] && S().paiementsElec[locId][date]);
+}
+
+window.toggleElecPaye=async function(locId,date,val){
+  if(!S().paiementsElec) S().paiementsElec={};
+  if(!S().paiementsElec[locId]) S().paiementsElec[locId]={};
+  if(val) S().paiementsElec[locId][date]=true;
+  else delete S().paiementsElec[locId][date];
+  await sauvegarder();
+  renderElecAnnuel();
 };
 
 // ════════════════════════════════════════════════════════════
