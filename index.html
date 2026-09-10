@@ -888,15 +888,16 @@ window.ajouterElecReleve=async function(){
   if(!dv){alert("Saisir une date.");return;}
   const[y,m,d]=dv.split("-");
   const nr={date:`${d}/${m}/${y}`};
-  let ok=true;
+  let rempli=false;
   LE().forEach(loc=>{
     const v=parseFloat(document.getElementById("ef-"+loc.id).value);
-    if(isNaN(v)) ok=false;
-    nr[loc.id]=isNaN(v)?null:v;
+    if(!isNaN(v)){nr[loc.id]=v;rempli=true;}
   });
-  if(!ok){alert("Saisir tous les relevés.");return;}
-  S().elec.releves.push(nr);
-  S().elec.releves.sort(sortByDate);
+  if(!rempli){alert("Saisir au moins un relevé.");return;}
+  // Fusionner avec un relevé existant à la même date si besoin
+  const existing=S().elec.releves.find(r=>r.date===nr.date);
+  if(existing){ Object.assign(existing,nr); }
+  else { S().elec.releves.push(nr); S().elec.releves.sort(sortByDate); }
   await sauvegarder();
   elecSub="releves"; renderElec();
   alert("✅ Relevé électricité enregistré !");
@@ -1106,8 +1107,10 @@ window.ajouterEauReleve=async function(){
     if(!isNaN(v)){nr[loc.id]=v;rempli=true;}
   });
   if(!rempli){alert("Saisir au moins un relevé.");return;}
-  S().eau.releves.push(nr);
-  S().eau.releves.sort(sortByDate);
+  // Fusionner avec un relevé existant à la même date si besoin
+  const existing=S().eau.releves.find(r=>r.date===nr.date);
+  if(existing){ Object.assign(existing,nr); }
+  else { S().eau.releves.push(nr); S().eau.releves.sort(sortByDate); }
   await sauvegarder();
   eauSub="releves"; renderEau();
   alert("✅ Relevé eau enregistré !");
