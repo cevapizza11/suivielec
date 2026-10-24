@@ -104,7 +104,7 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
 <div class="app">
   <div class="hdr">
     <div style="font-size:26px">🏠</div>
-    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau</p></div>
+    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 14:45</span></p></div>
     <span id="sync" class="sync busy"><span class="spin"></span>Chargement…</span>
   </div>
   <div class="tabs">
@@ -191,7 +191,7 @@ const LE = ()=>STATE.locataires.filter(l=>l.elec&&l.elec.actif);
 const LW = ()=>STATE.locataires.filter(l=>l.eau&&l.eau.actif);
 
 function setState(data){
-  STATE = migrer(data);
+  STATE = configCompteurGeneral(migrer(data));
   localStorage.setItem(CACHE, JSON.stringify(STATE));
 }
 
@@ -247,6 +247,23 @@ function migrer(data){
   }
   return n;
 }
+
+// Compteur d'eau général : le compteur relevé pour la pizzeria compte aussi
+// l'eau des appartements. loc.eau.deduire = [ids] → conso réelle = général − ces appartements.
+// Si rien n'est encore réglé, on détecte la pizzeria et on déduit les autres compteurs eau.
+function configCompteurGeneral(st){
+  if(!st||!st.locataires) return st;
+  const dejaRegle=st.locataires.some(l=>l.eau&&Array.isArray(l.eau.deduire));
+  if(dejaRegle) return st;
+  const estPizz=l=>/pizz/i.test(l.nom)||(/pizz/i.test(l.appart)&&!/appart/i.test(l.appart));
+  const cands=st.locataires.filter(l=>l.eau&&l.eau.actif&&estPizz(l));
+  if(cands.length===1){
+    const g=cands[0];
+    g.eau.deduire=st.locataires.filter(l=>l.id!==g.id&&l.eau&&l.eau.actif).map(l=>l.id);
+  }
+  return st;
+}
+const estGeneral=loc=>!!(loc&&loc.eau&&Array.isArray(loc.eau.deduire)&&loc.eau.deduire.length);
 
 // ════════════════════════════════════════════════════════════
 //  SYNC
@@ -353,12 +370,25 @@ function calcEauDiffs(locId){
   const loc=S().locataires.find(l=>l.id===locId);
   if(!loc) return [];
   const res=[];
+  const general=estGeneral(loc);
   for(let i=1;i<rels.length;i++){
-    const diff=+(rels[i][locId]-rels[i-1][locId]).toFixed(3);
+    const brut=+(rels[i][locId]-rels[i-1][locId]).toFixed(3);
+    let diff=brut, deduit=0;
+    const manquants=[];
+    if(general){
+      loc.eau.deduire.forEach(id=>{
+        const a=S().locataires.find(l=>l.id===id); if(!a) return;
+        const v1=rels[i-1][id], v2=rels[i][id];
+        if(v1==null||v2==null){ manquants.push(a.nom); return; }
+        deduit+=v2-v1;
+      });
+      deduit=+deduit.toFixed(3);
+      diff=+(brut-deduit).toFixed(3);
+    }
     const prix=+(diff*S().tarifEau).toFixed(2);
     const forf=getForfait(loc.eau.forfaits,rels[i].date);
     const photos=rels[i].photos||[];
-    res.push({date:rels[i].date,releve:rels[i][locId],diff,prix,forf,photos});
+    res.push({date:rels[i].date,releve:rels[i][locId],diff,prix,forf,photos,general,brut,deduit,manquants});
   }
   return res;
 }
@@ -485,6 +515,12 @@ function renderLocataires(){
           ${renderForfaits(loc.eau.forfaits,'eau',loc.id)}
         </div>
         <button onclick="addForfait('eau','${loc.id}')" class="btn btn-s" style="font-size:11px;padding:4px 10px;margin-top:3px">+ Période</button>
+        ${loc.eau.actif?`<div style="margin-top:8px;padding:8px 10px;background:var(--surf2);border-radius:var(--rsm);font-size:12px">
+          <div style="font-weight:600;margin-bottom:4px">🔀 Compteur général ? Déduire la conso de :</div>
+          ${S().locataires.filter(o=>o.id!==loc.id&&o.eau&&o.eau.actif).map(o=>`<label style="display:inline-flex;align-items:center;gap:4px;margin-right:12px">
+            <input type="checkbox" ${(loc.eau.deduire||[]).includes(o.id)?"checked":""} onchange="toggleDeduire('${loc.id}','${o.id}',this.checked)"/> ${o.nom}</label>`).join('')||'<span style="color:var(--text3)">Aucun autre compteur eau.</span>'}
+          <div style="color:var(--text3);margin-top:4px">Cochez seulement si le compteur de ce locataire inclut aussi l'eau d'autres logements (ex. pizzeria). Sinon, laissez tout décoché.</div>
+        </div>`:''}
       </div>
     </div>`;
   });
@@ -497,10 +533,27 @@ function renderLocataires(){
       <div class="fg"><label>Tarif m³ eau (€)</label><input type="number" id="glob-tarif-eau" step="0.01" value="${S().tarifEau}"/></div>
     </div>
   </div>
+  <div class="card" style="margin-top:8px">
+    <div class="ctitle">ℹ️ Règles de calcul de l'eau</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.6">
+      • Conso du mois = relevé du mois − relevé précédent, × tarif m³.<br>
+      • <strong>Compteur général</strong> (ex. pizzeria) : conso = conso du compteur général − conso des logements cochés. Il faut relever tous les compteurs <strong>à la même date</strong>, sinon le mois est signalé « incomplet ».<br>
+      • Badges de conso mensuelle : vert ≤ 5 m³, orange &gt; 5 m³, rouge &gt; 10 m³.<br>
+      • Alerte dépassement : si la projection annuelle dépasse le forfait de plus de 10 € (élec : plus de 30 €).<br>
+      ${S().locataires.filter(estGeneral).map(g=>`• Actuellement : <strong>${g.nom}</strong> = compteur général − ${g.eau.deduire.map(id=>(S().locataires.find(l=>l.id===id)||{nom:'?'}).nom).join(' − ')}.`).join('<br>')||'• Aucun compteur général réglé pour le moment.'}
+    </div>
+  </div>
   <button class="btn btn-p" onclick="sauvegarderLocataires()">💾 Sauvegarder tout</button>`;
 
   document.getElementById("pane-locataires").innerHTML=h;
 }
+
+window.toggleDeduire=function(locId,autreId,val){
+  const loc=S().locataires.find(l=>l.id===locId); if(!loc) return;
+  const set=new Set(loc.eau.deduire||[]);
+  if(val) set.add(autreId); else set.delete(autreId);
+  loc.eau.deduire=[...set];
+};
 
 window.toggleActif=function(type,locId,val){
   const loc=S().locataires.find(l=>l.id===locId);
@@ -638,6 +691,8 @@ function renderBoard(){
         <div class="bcard-row"><span style="font-size:10px;color:var(--text3)">${l.appart}</span></div>
         <div class="bcard-row"><span>Forfait</span><span>${last.forf} €</span></div>
         <div class="bcard-row"><span>${last.diff.toFixed(2)} m³</span><span>${last.prix.toFixed(2)} €</span></div>
+        ${last.general?`<div class="bcard-row"><span style="font-size:10px;color:var(--text3)">Général ${last.brut.toFixed(2)} − appts ${last.deduit.toFixed(2)}</span></div>`:''}
+        ${last.manquants&&last.manquants.length?`<div class="bcard-row"><span style="font-size:10px;color:var(--err)">⚠️ Incomplet : relevé manquant ${last.manquants.join(', ')}</span></div>`:''}
         <div class="bcard-tot" style="color:${colorBal(bal)}">${fmtBal(bal)} €</div>
       </div>`;
     });
@@ -932,6 +987,7 @@ function renderEauReleves(){
     const totP=diffs.reduce((s,d)=>s+d.prix,0);
     h+=`<div class="card"><div class="ctitle" style="color:var(--teal)">
       💧 ${loc.nom}<span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${loc.appart} · ${S().tarifEau} €/m³</span></div>`;
+    if(estGeneral(loc)) h+=`<div class="abox warn" style="margin-bottom:8px">🔀 Compteur général : la conso affichée = compteur général − ${loc.eau.deduire.map(id=>(S().locataires.find(l=>l.id===id)||{nom:'?'}).nom).join(' − ')}.</div>`;
     if(!diffs.length){ h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé.</p>`; }
     else{
       h+=`<table><thead><tr><th>Mois</th><th>Relevé m³</th><th>Conso m³</th><th>Coût €</th><th>Forfait €</th><th>Balance</th><th>📷</th><th></th></tr></thead><tbody>`;
@@ -941,7 +997,7 @@ function renderEauReleves(){
         h+=`<tr>
           <td>${dateLabel(d.date)}</td>
           <td><input type="number" value="${d.releve}" step="0.001" style="width:80px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:3px 5px;font-size:12px;color:var(--text);font-family:inherit;outline:none" onchange="modifEauReleve('${loc.id}','${d.date}',this.value)"/></td>
-          <td><span class="badge ${badgeM3(d.diff)}">${d.diff.toFixed(2)}</span></td>
+          <td><span class="badge ${badgeM3(d.diff)}">${d.diff.toFixed(2)}</span>${d.general?`<div style="font-size:10px;color:var(--text3);margin-top:2px">${d.brut.toFixed(2)} − ${d.deduit.toFixed(2)}</div>`:''}${d.manquants&&d.manquants.length?`<div style="font-size:10px;color:var(--err)">⚠️ manque ${d.manquants.join(', ')}</div>`:''}</td>
           <td>${d.prix.toFixed(2)}</td><td>${d.forf}</td>
           <td style="color:${colorBal(b)}">${fmtBal(b)}</td>
           <td style="text-align:left">
@@ -1077,10 +1133,10 @@ function renderEauAjouter(){
     <div class="fgrid" style="margin-top:8px">`;
   locs.forEach(loc=>{
     const der=eauDernier(loc.id);
-    h+=`<div class="fg"><label style="color:var(--teal)">${loc.nom} <span style="font-weight:400;color:var(--text3)">— dernier : ${der!=null?der+" m³":"—"}</span></label>
+    h+=`<div class="fg"><label style="color:var(--teal)">${loc.nom}${estGeneral(loc)?' <strong>(compteur général)</strong>':''} <span style="font-weight:400;color:var(--text3)">— dernier : ${der!=null?der+" m³":"—"}</span></label>
       <input type="number" id="wf-${loc.id}" placeholder="m³ compteur" step="0.001"/></div>`;
   });
-  h+=`</div><button class="btn btn-p" style="margin-top:8px" onclick="ajouterEauReleve()">💾 Enregistrer</button></div>`;
+  h+=`</div>${locs.some(estGeneral)?`<p style="font-size:11px;color:var(--text3);margin-top:6px">🔀 Relevez tous les compteurs le même jour : la conso de la pizzeria est calculée en retirant celle des appartements.</p>`:''}<button class="btn btn-p" style="margin-top:8px" onclick="ajouterEauReleve()">💾 Enregistrer</button></div>`;
   if(sorted.length){
     h+=`<div class="card"><div class="ctitle">📋 Historique brut</div><div style="overflow-x:auto">
       <table><thead><tr><th>Date</th>${locs.map(l=>`<th>${l.nom.split(' ')[0]}</th>`).join("")}<th></th></tr></thead><tbody>`;
