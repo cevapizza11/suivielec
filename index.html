@@ -99,12 +99,13 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
   .forfait-item{flex-direction:column;align-items:flex-start;}
 }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 <div class="app">
   <div class="hdr">
     <div style="font-size:26px">🏠</div>
-    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 14:45</span></p></div>
+    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 15:40</span></p></div>
     <span id="sync" class="sync busy"><span class="spin"></span>Chargement…</span>
   </div>
   <div class="tabs">
@@ -191,7 +192,7 @@ const LE = ()=>STATE.locataires.filter(l=>l.elec&&l.elec.actif);
 const LW = ()=>STATE.locataires.filter(l=>l.eau&&l.eau.actif);
 
 function setState(data){
-  STATE = configCompteurGeneral(migrer(data));
+  STATE = configFactures(configCompteurGeneral(migrer(data)));
   localStorage.setItem(CACHE, JSON.stringify(STATE));
 }
 
@@ -263,6 +264,25 @@ function configCompteurGeneral(st){
   }
   return st;
 }
+// Factures de charges (sociétés) : émetteur SCI + fiches clients pré-remplies
+const EMETTEUR_DEFAUT={nom:"SCI Thomarion",adr1:"83 avenue Jean Camp",adr2:"11100 Narbonne",
+  siret:"918 029 810 00010",tva:"FR64918029810",tel:"06 63 09 74 82",email:"tmjumeaux@orange.fr",tauxTva:20,tarifsTTC:true};
+const CLIENTS_CONNUS=[
+  {re:/initiales/i, f:{raison:"SAS Les 4 Initiales",adr1:"83 avenue Jean Camp",adr2:"11100 Narbonne",siren:"SIREN 108 463 563",tva:"FR30108463563"}},
+  {re:/fascian/i,   f:{raison:"SASU Pizzeria Fascianella",adr1:"83 avenue Jean Camp",adr2:"11100 Narbonne",siren:"SIRET 939 245 981 00013",tva:"FR87939245981"}},
+];
+function configFactures(st){
+  if(!st||!st.locataires) return st;
+  if(!st.emetteur) st.emetteur={...EMETTEUR_DEFAUT};
+  if(!Array.isArray(st.facturesCharges)) st.facturesCharges=[];
+  st.locataires.forEach(l=>{
+    if(l.facture) return;
+    const c=CLIENTS_CONNUS.find(c=>c.re.test(l.nom)||c.re.test(l.appart));
+    if(c) l.facture={actif:true,...c.f};
+  });
+  return st;
+}
+const aFacture=loc=>!!(loc&&loc.facture&&loc.facture.actif);
 const estGeneral=loc=>!!(loc&&loc.eau&&Array.isArray(loc.eau.deduire)&&loc.eau.deduire.length);
 
 // ════════════════════════════════════════════════════════════
@@ -522,6 +542,23 @@ function renderLocataires(){
           <div style="color:var(--text3);margin-top:4px">Cochez seulement si le compteur de ce locataire inclut aussi l'eau d'autres logements (ex. pizzeria). Sinon, laissez tout décoché.</div>
         </div>`:''}
       </div>
+
+      <!-- FACTURE DE CHARGES -->
+      <div style="margin-top:12px">
+        <label style="font-size:12px;font-weight:600;color:var(--blue);display:flex;align-items:center;gap:5px">
+          <input type="checkbox" id="loc-fact-actif-${loc.id}" ${aFacture(loc)?"checked":""} onchange="toggleFacture('${loc.id}',this.checked)"/>
+          🧾 Facture de charges (locataire société)
+        </label>
+        <div id="fact-${loc.id}" style="${aFacture(loc)?'':'display:none;'}margin-top:6px">
+          <div class="fgrid">
+            <div class="fg"><label>Raison sociale</label><input type="text" id="fc-raison-${loc.id}" value="${(loc.facture&&loc.facture.raison)||''}"/></div>
+            <div class="fg"><label>SIREN / SIRET</label><input type="text" id="fc-siren-${loc.id}" value="${(loc.facture&&loc.facture.siren)||''}"/></div>
+            <div class="fg"><label>Adresse</label><input type="text" id="fc-adr1-${loc.id}" value="${(loc.facture&&loc.facture.adr1)||''}"/></div>
+            <div class="fg"><label>Code postal + ville</label><input type="text" id="fc-adr2-${loc.id}" value="${(loc.facture&&loc.facture.adr2)||''}"/></div>
+            <div class="fg"><label>N° TVA</label><input type="text" id="fc-tva-${loc.id}" value="${(loc.facture&&loc.facture.tva)||''}"/></div>
+          </div>
+        </div>
+      </div>
     </div>`;
   });
 
@@ -534,12 +571,28 @@ function renderLocataires(){
     </div>
   </div>
   <div class="card" style="margin-top:8px">
+    <div class="ctitle">🧾 Émetteur des factures de charges</div>
+    <div class="fgrid">
+      <div class="fg"><label>Nom</label><input type="text" id="em-nom" value="${S().emetteur.nom}"/></div>
+      <div class="fg"><label>SIRET</label><input type="text" id="em-siret" value="${S().emetteur.siret}"/></div>
+      <div class="fg"><label>Adresse</label><input type="text" id="em-adr1" value="${S().emetteur.adr1}"/></div>
+      <div class="fg"><label>Code postal + ville</label><input type="text" id="em-adr2" value="${S().emetteur.adr2}"/></div>
+      <div class="fg"><label>N° TVA</label><input type="text" id="em-tva" value="${S().emetteur.tva}"/></div>
+      <div class="fg"><label>Taux TVA (%)</label><input type="number" id="em-taux" step="0.1" value="${S().emetteur.tauxTva}"/></div>
+      <div class="fg"><label>Téléphone</label><input type="text" id="em-tel" value="${S().emetteur.tel}"/></div>
+      <div class="fg"><label>E-mail</label><input type="text" id="em-email" value="${S().emetteur.email}"/></div>
+      <div class="fg"><label>Les tarifs kWh / m³ ci-dessus sont</label><select id="em-ttc"><option value="ttc" ${S().emetteur.tarifsTTC?'selected':''}>TTC (prix payé au fournisseur)</option><option value="ht" ${!S().emetteur.tarifsTTC?'selected':''}>HT</option></select></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px">La facture reprend le coût réel (électricité + eau) du mois, sur une seule ligne « Refacturation de charges locatives », sans marge. Si les tarifs sont TTC, le total TTC de la facture = coût payé au fournisseur.</div>
+  </div>
+  <div class="card" style="margin-top:8px">
     <div class="ctitle">ℹ️ Règles de calcul de l'eau</div>
     <div style="font-size:12px;color:var(--text2);line-height:1.6">
       • Conso du mois = relevé du mois − relevé précédent, × tarif m³.<br>
       • <strong>Compteur général</strong> (ex. pizzeria) : conso = conso du compteur général − conso des logements cochés. Il faut relever tous les compteurs <strong>à la même date</strong>, sinon le mois est signalé « incomplet ».<br>
       • Badges de conso mensuelle : vert ≤ 5 m³, orange &gt; 5 m³, rouge &gt; 10 m³.<br>
       • Alerte dépassement : si la projection annuelle dépasse le forfait de plus de 10 € (élec : plus de 30 €).<br>
+      • Facture de charges (🧾) : coût réel élec + eau du mois (conso × tarif), une seule ligne « charges », TVA ${S().emetteur.tauxTva} %. Si l'eau n'a pas de relevé à la même date, la facture ne contient que l'électricité (un message prévient).<br>
       ${S().locataires.filter(estGeneral).map(g=>`• Actuellement : <strong>${g.nom}</strong> = compteur général − ${g.eau.deduire.map(id=>(S().locataires.find(l=>l.id===id)||{nom:'?'}).nom).join(' − ')}.`).join('<br>')||'• Aucun compteur général réglé pour le moment.'}
     </div>
   </div>
@@ -547,6 +600,12 @@ function renderLocataires(){
 
   document.getElementById("pane-locataires").innerHTML=h;
 }
+
+window.toggleFacture=function(locId,val){
+  const loc=S().locataires.find(l=>l.id===locId); if(!loc) return;
+  loc.facture={...(loc.facture||{}),actif:val};
+  const d=document.getElementById("fact-"+locId); if(d) d.style.display=val?'':'none';
+};
 
 window.toggleDeduire=function(locId,autreId,val){
   const loc=S().locataires.find(l=>l.id===locId); if(!loc) return;
@@ -601,7 +660,14 @@ window.sauvegarderLocataires=async function(){
     const cw=document.getElementById("loc-eau-actif-"+loc.id);
     if(ce) loc.elec.actif=ce.checked;
     if(cw) loc.eau.actif=cw.checked;
+    if(loc.facture&&document.getElementById("fc-raison-"+loc.id)){
+      ["raison","siren","adr1","adr2","tva"].forEach(k=>{ const el=document.getElementById(`fc-${k}-${loc.id}`); if(el) loc.facture[k]=el.value.trim(); });
+    }
   });
+  const E=S().emetteur;
+  ["nom","adr1","adr2","siret","tva","tel","email"].forEach(k=>{ const el=document.getElementById("em-"+k); if(el) E[k]=el.value.trim(); });
+  const tx=parseFloat((document.getElementById("em-taux")||{}).value); if(!isNaN(tx)&&tx>=0) E.tauxTva=tx;
+  const tt=document.getElementById("em-ttc"); if(tt) E.tarifsTTC=tt.value==="ttc";
   const te=parseFloat(document.getElementById("glob-tarif-elec").value);
   const tw=parseFloat(document.getElementById("glob-tarif-eau").value);
   if(!isNaN(te)&&te>0) S().tarifElec=te;
@@ -784,7 +850,7 @@ function renderElecReleves(){
               <button onclick="setElecPhoto('${d.date}')" style="padding:2px 5px;background:var(--blue);color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">+</button>
             </div>
           </td>
-          <td><button class="btn-del" onclick="supprimerElecReleveDate('${loc.id}','${d.date}')">🗑</button></td>
+          <td style="white-space:nowrap">${aFacture(loc)?`<button onclick="factureCharges('${loc.id}','${d.date}')" title="Facture de charges" style="padding:3px 7px;background:var(--blue);color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;margin-right:4px">🧾 Facture</button>`:''}<button class="btn-del" onclick="supprimerElecReleveDate('${loc.id}','${d.date}')">🗑</button></td>
         </tr>`;
       });
       h+=`<tr class="tot"><td colspan="2">Total (${diffs.length} mois)</td><td>${tot.toFixed(0)}</td><td>${totP.toFixed(2)}</td><td colspan="4"></td></tr>`;
@@ -1010,7 +1076,7 @@ function renderEauReleves(){
               <button onclick="setEauPhoto('${d.date}')" style="padding:2px 5px;background:var(--teal);color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">+</button>
             </div>
           </td>
-          <td><button class="btn-del" onclick="supprimerEauReleveDate('${loc.id}','${d.date}')">🗑</button></td>
+          <td style="white-space:nowrap">${aFacture(loc)&&!(loc.elec&&loc.elec.actif)?`<button onclick="factureCharges('${loc.id}','${d.date}')" title="Facture de charges" style="padding:3px 7px;background:var(--teal);color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;margin-right:4px">🧾 Facture</button>`:''}<button class="btn-del" onclick="supprimerEauReleveDate('${loc.id}','${d.date}')">🗑</button></td>
         </tr>`;
       });
       h+=`<tr class="tot"><td colspan="2">Total (${diffs.length} mois)</td><td>${tot.toFixed(2)} m³</td><td>${totP.toFixed(2)} €</td><td colspan="4"></td></tr>`;
@@ -1176,6 +1242,80 @@ window.supprimerEauReleve=async function(date){
   if(!confirm("Supprimer le relevé du "+date+" ?")) return;
   S().eau.releves=S().eau.releves.filter(r=>r.date!==date);
   await sauvegarder(); renderEau();
+};
+
+// ════════════════════════════════════════════════════════════
+//  FACTURE DE CHARGES (PDF)
+// ════════════════════════════════════════════════════════════
+const eur=n=>n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).replace(/\u202f|\u00a0/g,' ')+' €';
+window.factureCharges=async function(locId,date){
+  const loc=S().locataires.find(l=>l.id===locId); if(!loc||!loc.facture) return;
+  const f=loc.facture, E=S().emetteur;
+  if(!f.raison){alert("Renseignez la raison sociale du locataire dans 👤 Locataires.");return;}
+  const de=(loc.elec&&loc.elec.actif)?calcElecDiffs(locId).find(d=>d.date===date):null;
+  const dw=(loc.eau&&loc.eau.actif)?calcEauDiffs(locId).find(d=>d.date===date):null;
+  if(!de&&!dw){alert("Aucune consommation à cette date.");return;}
+  if(loc.elec&&loc.elec.actif&&loc.eau&&loc.eau.actif&&!dw){
+    if(!confirm("Pas de relevé d'eau au "+date+" : la facture ne contiendra que l'électricité. Continuer ?")) return;
+  }
+  if(dw&&dw.manquants&&dw.manquants.length){
+    if(!confirm("Eau incomplète (relevé manquant : "+dw.manquants.join(', ')+"). Continuer quand même ?")) return;
+  }
+  // Période : du relevé précédent à ce relevé
+  const src=de?S().elec.releves.filter(r=>r[locId]!=null):S().eau.releves.filter(r=>r[locId]!=null);
+  const triees=[...src].sort(sortByDate); const idx=triees.findIndex(r=>r.date===date);
+  const debut=idx>0?triees[idx-1].date:date;
+  const cout=+(((de?de.prix:0)+(dw?dw.prix:0))).toFixed(2);
+  const taux=+E.tauxTva||0;
+  let ht,tva,ttc;
+  if(E.tarifsTTC){ ttc=cout; ht=+(ttc/(1+taux/100)).toFixed(2); tva=+(ttc-ht).toFixed(2); }
+  else { ht=cout; tva=+(ht*taux/100).toFixed(2); ttc=+(ht+tva).toFixed(2); }
+  // Numéro (réutilisé si déjà émis pour ce locataire et cette date)
+  const [jj,mm,aa]=date.split("/");
+  let fc=S().facturesCharges.find(x=>x.locId===locId&&x.date===date);
+  if(!fc){
+    const n=S().facturesCharges.filter(x=>x.num.startsWith("CH-"+aa+"-")).length+1;
+    fc={num:`CH-${aa}-${String(n).padStart(3,"0")}`,locId,date,emise:new Date().toLocaleDateString('fr-FR')};
+    S().facturesCharges.push(fc);
+  }
+  Object.assign(fc,{ht,tva,ttc,debut});
+  await sauvegarder();
+
+  const {jsPDF}=window.jspdf; const pdf=new jsPDF({unit:"mm",format:"a4"});
+  const W=210, ml=18, mr=18; let y=20;
+  pdf.setFont("helvetica","bold"); pdf.setFontSize(16); pdf.text(E.nom.toUpperCase(),ml,y);
+  pdf.text("FACTURE",W-mr,y,{align:"right"});
+  pdf.setFont("helvetica","normal"); pdf.setFontSize(9.5); y+=7;
+  [E.adr1,E.adr2,"SIRET "+E.siret,"N° TVA : "+E.tva,E.tel+(E.email?" · "+E.email:"")].forEach(t=>{pdf.text(t,ml,y);y+=4.8;});
+  let yr=27; pdf.setFont("helvetica","bold"); pdf.text("N° "+fc.num,W-mr,yr,{align:"right"}); pdf.setFont("helvetica","normal");
+  yr+=4.8; pdf.text("Date : "+fc.emise,W-mr,yr,{align:"right"});
+  yr+=4.8; pdf.text(`Période : du ${debut} au ${date}`,W-mr,yr,{align:"right"});
+  // Client
+  y=Math.max(y,yr)+10; const bx=112;
+  pdf.setDrawColor(200); pdf.setFillColor(240,240,245); pdf.rect(bx,y,W-mr-bx,7,"F"); pdf.rect(bx,y,W-mr-bx,33);
+  pdf.setFont("helvetica","bold"); pdf.setFontSize(8.5); pdf.text("FACTURÉ À",bx+3,y+4.8);
+  pdf.setFontSize(10); pdf.text(f.raison,bx+3,y+12); pdf.setFont("helvetica","normal"); pdf.setFontSize(9.5);
+  let yc=y+17; [f.adr1,f.adr2,f.siren,f.tva?"N° TVA : "+f.tva:""].filter(Boolean).forEach(t=>{pdf.text(t,bx+3,yc);yc+=4.6;});
+  // Tableau
+  y+=45; pdf.setFillColor(240,240,245); pdf.rect(ml,y,W-ml-mr,8,"F");
+  pdf.setFont("helvetica","bold"); pdf.setFontSize(9.5);
+  pdf.text("Désignation",ml+3,y+5.4); pdf.text("Qté",130,y+5.4,{align:"right"}); pdf.text("TVA",150,y+5.4,{align:"right"}); pdf.text("Total HT",W-mr-3,y+5.4,{align:"right"});
+  y+=8; pdf.setFont("helvetica","normal");
+  const des=pdf.splitTextToSize(`Refacturation de charges locatives — ${loc.appart}, 83 avenue Jean Camp, Narbonne — période du ${debut} au ${date}`,95);
+  pdf.text(des,ml+3,y+6); pdf.text("1",130,y+6,{align:"right"}); pdf.text(taux+" %",150,y+6,{align:"right"}); pdf.text(eur(ht),W-mr-3,y+6,{align:"right"});
+  y+=6+des.length*4.6+3; pdf.setDrawColor(200); pdf.line(ml,y,W-mr,y);
+  // Totaux
+  y+=8; const tx=150, tv=W-mr-3;
+  [["Total HT",eur(ht)],[`TVA ${taux} %`,eur(tva)]].forEach(r=>{pdf.text(r[0],tx,y,{align:"right"});pdf.text(r[1],tv,y,{align:"right"});y+=6.5;});
+  pdf.setFillColor(240,240,245); pdf.rect(112,y-4.6,W-mr-112,7.5,"F"); pdf.setFont("helvetica","bold");
+  pdf.text("TOTAL TTC",tx,y,{align:"right"}); pdf.text(eur(ttc),tv,y,{align:"right"});
+  // Conditions
+  y+=16; pdf.setFont("helvetica","normal"); pdf.setFontSize(8.3);
+  const cond=pdf.splitTextToSize("Charges refacturées au coût réel, sans marge, selon les relevés de compteurs de la période. Paiement à réception par virement ou tout moyen à votre convenance. Pas d'escompte pour paiement anticipé. En cas de retard de paiement, pénalités au taux de trois fois le taux d'intérêt légal (art. L.441-10 du Code de commerce) et indemnité forfaitaire pour frais de recouvrement de 40 € (art. D.441-5 du Code de commerce).",W-ml-mr);
+  pdf.text(cond,ml,y);
+  pdf.setDrawColor(0); pdf.line(ml,282,W-mr,282); pdf.setFontSize(7.5);
+  pdf.text(`${E.nom} - ${E.adr1}, ${E.adr2} - SIRET ${E.siret} - TVA ${E.tva}`,W/2,286,{align:"center"});
+  pdf.save(`Facture_charges_${fc.num}_${f.raison.replace(/[^A-Za-z0-9]+/g,'_')}.pdf`);
 };
 
 // ════════════════════════════════════════════════════════════
