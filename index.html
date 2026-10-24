@@ -105,7 +105,7 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
 <div class="app">
   <div class="hdr">
     <div style="font-size:26px">🏠</div>
-    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 17:05</span></p></div>
+    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 17:30</span></p></div>
     <span id="sync" class="sync busy"><span class="spin"></span>Chargement…</span>
   </div>
   <div class="tabs">
@@ -592,6 +592,8 @@ function renderLocataires(){
       <div class="fg"><label>Taux TVA (%)</label><input type="number" id="em-taux" step="0.1" value="${S().emetteur.tauxTva}"/></div>
       <div class="fg"><label>Téléphone</label><input type="text" id="em-tel" value="${S().emetteur.tel}"/></div>
       <div class="fg"><label>E-mail</label><input type="text" id="em-email" value="${S().emetteur.email}"/></div>
+      <div class="fg"><label>Nom des dossiers TVA</label><input type="text" id="em-dossier" value="${S().emetteur.dossierTVA||'TVA SCI THOMARION'}"/></div>
+      <div class="fg"><label>Dossier de rangement (PC)</label><button class="btn btn-s" onclick="changerDossierTVA()" style="font-size:12px">📁 Choisir / changer le dossier</button></div>
       <div class="fg"><label>Les tarifs kWh / m³ ci-dessus sont</label><select id="em-ttc"><option value="ttc" ${S().emetteur.tarifsTTC?'selected':''}>TTC (prix payé au fournisseur)</option><option value="ht" ${!S().emetteur.tarifsTTC?'selected':''}>HT</option></select></div>
     </div>
     <div style="font-size:11px;color:var(--text3);margin-top:6px">La facture reprend le coût réel (électricité + eau) du mois, sur une seule ligne « Refacturation de charges locatives », sans marge. Si les tarifs sont TTC, le total TTC de la facture = coût payé au fournisseur.</div>
@@ -605,7 +607,7 @@ function renderLocataires(){
       • Alerte dépassement : si la projection annuelle dépasse le forfait de plus de 10 € (élec : plus de 30 €).<br>
       • Tarifs : chaque locataire peut avoir son propre tarif kWh / m³ et un abonnement électricité mensuel (fiche locataire). Case vide = tarif global ci-dessus.<br>
       • Coût électricité du mois = kWh × tarif du locataire + abonnement mensuel.<br>
-      • Facture de charges (🧾) : coût réel élec (abonnement compris) + eau du mois, une seule ligne « charges », TVA ${S().emetteur.tauxTva} %, numéro CH-AAAA-MM-001 (compteur remis à 001 chaque mois). Si l'eau n'a pas de relevé à la même date, la facture ne contient que l'électricité (un message prévient).<br>
+      • Facture de charges (🧾) : coût réel élec (abonnement compris) + eau du mois, une seule ligne « charges », TVA ${S().emetteur.tauxTva} %, numéro CH-AAAA-MM-001 (compteur remis à 001 chaque mois). Sur PC (Chrome/Edge), le PDF est rangé automatiquement dans le sous-dossier « ${S().emetteur.dossierTVA||'TVA SCI THOMARION'} MOIS ANNÉE » du dossier choisi ; sur iPhone, il est téléchargé normalement. Si l'eau n'a pas de relevé à la même date, la facture ne contient que l'électricité (un message prévient).<br>
       ${S().locataires.filter(estGeneral).map(g=>`• Actuellement : <strong>${g.nom}</strong> = compteur général − ${g.eau.deduire.map(id=>(S().locataires.find(l=>l.id===id)||{nom:'?'}).nom).join(' − ')}.`).join('<br>')||'• Aucun compteur général réglé pour le moment.'}
     </div>
   </div>
@@ -684,6 +686,7 @@ window.sauvegarderLocataires=async function(){
   });
   const E=S().emetteur;
   ["nom","adr1","adr2","siret","tva","tel","email"].forEach(k=>{ const el=document.getElementById("em-"+k); if(el) E[k]=el.value.trim(); });
+  const ed=document.getElementById("em-dossier"); if(ed&&ed.value.trim()) E.dossierTVA=ed.value.trim();
   const tx=parseFloat((document.getElementById("em-taux")||{}).value); if(!isNaN(tx)&&tx>=0) E.tauxTva=tx;
   const tt=document.getElementById("em-ttc"); if(tt) E.tarifsTTC=tt.value==="ttc";
   const te=parseFloat(document.getElementById("glob-tarif-elec").value);
@@ -1266,8 +1269,39 @@ window.supprimerEauReleve=async function(date){
 //  FACTURE DE CHARGES (PDF)
 // ════════════════════════════════════════════════════════════
 const eur=n=>n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).replace(/\u202f|\u00a0/g,' ')+' €';
+// ── Rangement automatique dans le dossier TVA (PC : Chrome / Edge) ──
+// L'utilisateur choisit UNE fois le dossier parent (ex. Téléchargements\TVA SCI THOMARION).
+// Ensuite chaque facture va dans le sous-dossier « TVA SCI THOMARION <MOIS> <ANNÉE> ».
+const MOIS_LONG=["JANVIER","FÉVRIER","MARS","AVRIL","MAI","JUIN","JUILLET","AOÛT","SEPTEMBRE","OCTOBRE","NOVEMBRE","DÉCEMBRE"];
+const idb=(mode,fn)=>new Promise((res,rej)=>{const o=indexedDB.open("jeancamp_fs",1);o.onupgradeneeded=()=>o.result.createObjectStore("h");o.onsuccess=()=>{const tx=o.result.transaction("h",mode);const r=fn(tx.objectStore("h"));tx.oncomplete=()=>res(r&&r.result);tx.onerror=()=>rej(tx.error);};o.onerror=()=>rej(o.error);});
+async function dossierTVA(forcerChoix){
+  if(!window.showDirectoryPicker) return null;             // iPhone / navigateur non compatible → téléchargement normal
+  try{
+    let h=forcerChoix?null:await idb("readonly",st=>st.get("tva"));
+    if(h){
+      let perm=await h.queryPermission({mode:"readwrite"});
+      if(perm!=="granted") perm=await h.requestPermission({mode:"readwrite"});
+      if(perm==="granted") return h;
+    }
+    alert("Choisissez le dossier où ranger les factures de charges.\n\nConseil : dans Téléchargements, créez (ou choisissez) le dossier « TVA SCI THOMARION ». L'appli y créera chaque mois le sous-dossier « TVA SCI THOMARION <MOIS> <ANNÉE> ».");
+    h=await window.showDirectoryPicker({id:"tva-sci",mode:"readwrite",startIn:"downloads"});
+    await idb("readwrite",st=>st.put(h,"tva"));
+    return h;
+  }catch(e){ console.warn("Dossier TVA non choisi",e); return null; }
+}
+window.changerDossierTVA=async function(){ const h=await dossierTVA(true); if(h){ alert("✅ Dossier de rangement : "+h.name); renderLocataires(); } };
+async function rangerPDF(dir,blob,nomFichier,dateFacture){
+  const [,m,a]=dateFacture.split("/");
+  const nomDossier=`${(S().emetteur.dossierTVA||"TVA SCI THOMARION")} ${MOIS_LONG[+m-1]} ${a}`;
+  const sous=await dir.getDirectoryHandle(nomDossier,{create:true});
+  const fh=await sous.getFileHandle(nomFichier,{create:true});
+  const w=await fh.createWritable(); await w.write(blob); await w.close();
+  return `${dir.name}\\${nomDossier}`;
+}
+
 window.factureCharges=async function(locId,date){
   const loc=S().locataires.find(l=>l.id===locId); if(!loc||!loc.facture) return;
+  const dirTVA=await dossierTVA(false);   // demandé tout de suite (le navigateur exige que ce soit juste après le clic)
   const f=loc.facture, E=S().emetteur;
   if(!f.raison){alert("Renseignez la raison sociale du locataire dans 👤 Locataires.");return;}
   const de=(loc.elec&&loc.elec.actif)?calcElecDiffs(locId).find(d=>d.date===date):null;
@@ -1336,7 +1370,15 @@ window.factureCharges=async function(locId,date){
   pdf.text(cond,ml,y);
   pdf.setDrawColor(0); pdf.line(ml,282,W-mr,282); pdf.setFontSize(7.5);
   pdf.text(`${E.nom} - ${E.adr1}, ${E.adr2} - SIRET ${E.siret} - TVA ${E.tva}`,W/2,286,{align:"center"});
-  pdf.save(`Facture_charges_${fc.num}_${f.raison.replace(/[^A-Za-z0-9]+/g,'_')}.pdf`);
+  const nomFichier=`Facture_charges_${fc.num}_${f.raison.replace(/[^A-Za-z0-9]+/g,'_')}.pdf`;
+  if(dirTVA){
+    try{
+      const ou=await rangerPDF(dirTVA,pdf.output("blob"),nomFichier,fc.emise);
+      alert("✅ Facture "+fc.num+" rangée dans :\n"+ou);
+      return;
+    }catch(e){ console.error(e); alert("Rangement impossible ("+e.message+"). La facture est téléchargée normalement."); }
+  }
+  pdf.save(nomFichier);
 };
 
 // ════════════════════════════════════════════════════════════
