@@ -105,7 +105,7 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
 <div class="app">
   <div class="hdr">
     <div style="font-size:26px">🏠</div>
-    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 17:30</span></p></div>
+    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 17:35</span></p></div>
     <span id="sync" class="sync busy"><span class="spin"></span>Chargement…</span>
   </div>
   <div class="tabs">
@@ -607,7 +607,7 @@ function renderLocataires(){
       • Alerte dépassement : si la projection annuelle dépasse le forfait de plus de 10 € (élec : plus de 30 €).<br>
       • Tarifs : chaque locataire peut avoir son propre tarif kWh / m³ et un abonnement électricité mensuel (fiche locataire). Case vide = tarif global ci-dessus.<br>
       • Coût électricité du mois = kWh × tarif du locataire + abonnement mensuel.<br>
-      • Facture de charges (🧾) : coût réel élec (abonnement compris) + eau du mois, une seule ligne « charges », TVA ${S().emetteur.tauxTva} %, numéro CH-AAAA-MM-001 (compteur remis à 001 chaque mois). Sur PC (Chrome/Edge), le PDF est rangé automatiquement dans le sous-dossier « ${S().emetteur.dossierTVA||'TVA SCI THOMARION'} MOIS ANNÉE » du dossier choisi ; sur iPhone, il est téléchargé normalement. Si l'eau n'a pas de relevé à la même date, la facture ne contient que l'électricité (un message prévient).<br>
+      • Facture de charges (🧾) : coût réel élec (abonnement compris) + eau du mois, une seule ligne « charges », TVA ${S().emetteur.tauxTva} %, numéro CH-AAAA-MM-001 (compteur remis à 001 chaque mois). Sur PC (Chrome, Edge ou Opera), le PDF est rangé automatiquement dans le sous-dossier « ${S().emetteur.dossierTVA||'TVA SCI THOMARION'} MOIS ANNÉE » du dossier choisi ; sur iPhone, il est téléchargé normalement. Si l'eau n'a pas de relevé à la même date, la facture ne contient que l'électricité (un message prévient).<br>
       ${S().locataires.filter(estGeneral).map(g=>`• Actuellement : <strong>${g.nom}</strong> = compteur général − ${g.eau.deduire.map(id=>(S().locataires.find(l=>l.id===id)||{nom:'?'}).nom).join(' − ')}.`).join('<br>')||'• Aucun compteur général réglé pour le moment.'}
     </div>
   </div>
@@ -1269,7 +1269,7 @@ window.supprimerEauReleve=async function(date){
 //  FACTURE DE CHARGES (PDF)
 // ════════════════════════════════════════════════════════════
 const eur=n=>n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).replace(/\u202f|\u00a0/g,' ')+' €';
-// ── Rangement automatique dans le dossier TVA (PC : Chrome / Edge) ──
+// ── Rangement automatique dans le dossier TVA (PC : Chrome, Edge, Opera) ──
 // L'utilisateur choisit UNE fois le dossier parent (ex. Téléchargements\TVA SCI THOMARION).
 // Ensuite chaque facture va dans le sous-dossier « TVA SCI THOMARION <MOIS> <ANNÉE> ».
 const MOIS_LONG=["JANVIER","FÉVRIER","MARS","AVRIL","MAI","JUIN","JUILLET","AOÛT","SEPTEMBRE","OCTOBRE","NOVEMBRE","DÉCEMBRE"];
