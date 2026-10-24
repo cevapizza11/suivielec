@@ -108,7 +108,7 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
 <div class="app">
   <div class="hdr">
     <div style="font-size:26px">🏠</div>
-    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 18:12</span></p></div>
+    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 18:14</span></p></div>
     <span id="sync" class="sync busy"><span class="spin"></span>Chargement…</span>
     <a class="app-switch" href="https://cevapizza11.github.io/gestionlocative/" title="Ouvrir l'appli Gestion locative (quittances, factures, baux)">📄 Gestion locative →</a>
   </div>
@@ -1282,7 +1282,11 @@ const idb=(mode,fn)=>new Promise((res,rej)=>{const o=indexedDB.open("jeancamp_fs
 async function dossierTVA(){
   if(!window.showDirectoryPicker) return null;             // iPhone / navigateur non compatible → téléchargement normal
   try{
-    const h=await idb("readonly",st=>st.get("dossier_gestion_locative"));
+    let h=await idb("readonly",st=>st.get("dossier_gestion_locative"));
+    if(!h){ // reprise d'un dossier choisi avant le 24/10/2026 18:12 (ancien réglage), s'il s'appelle « Gestion locative »
+      const old=await idb("readonly",st=>st.get("tva"));
+      if(old&&/gestion\s*locative/i.test(old.name)){ h=old; await idb("readwrite",st=>st.put(old,"dossier_gestion_locative")); }
+    }
     if(!h) return "choisir";
     let perm=await h.queryPermission({mode:"readwrite"});
     if(perm!=="granted") perm=await h.requestPermission({mode:"readwrite"});
