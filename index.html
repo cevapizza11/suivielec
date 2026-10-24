@@ -105,7 +105,7 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
 <div class="app">
   <div class="hdr">
     <div style="font-size:26px">🏠</div>
-    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 16:30</span></p></div>
+    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 17:05</span></p></div>
     <span id="sync" class="sync busy"><span class="spin"></span>Chargement…</span>
   </div>
   <div class="tabs">
@@ -282,6 +282,10 @@ function configFactures(st){
   });
   return st;
 }
+// Tarifs par locataire (vide = tarif global) + abonnement électricité mensuel
+const TE=loc=>(loc&&loc.elec&&+loc.elec.tarif>0)?+loc.elec.tarif:S().tarifElec;
+const TW=loc=>(loc&&loc.eau&&+loc.eau.tarif>0)?+loc.eau.tarif:S().tarifEau;
+const ABO=loc=>(loc&&loc.elec&&+loc.elec.abo>0)?+loc.elec.abo:0;
 const aFacture=loc=>!!(loc&&loc.facture&&loc.facture.actif);
 const estGeneral=loc=>!!(loc&&loc.eau&&Array.isArray(loc.eau.deduire)&&loc.eau.deduire.length);
 
@@ -376,7 +380,7 @@ function calcElecDiffs(locId){
   const res=[];
   for(let i=1;i<rels.length;i++){
     const diff=+(rels[i][locId]-rels[i-1][locId]).toFixed(2);
-    const prix=+(diff*S().tarifElec).toFixed(2);
+    const prix=+(diff*TE(loc)+ABO(loc)).toFixed(2);
     const forf=getForfait(loc.elec.forfaits,rels[i].date);
     const photos=rels[i].photos||[];
     res.push({date:rels[i].date,releve:rels[i][locId],diff,prix,forf,photos});
@@ -405,7 +409,7 @@ function calcEauDiffs(locId){
       deduit=+deduit.toFixed(3);
       diff=+(brut-deduit).toFixed(3);
     }
-    const prix=+(diff*S().tarifEau).toFixed(2);
+    const prix=+(diff*TW(loc)).toFixed(2);
     const forf=getForfait(loc.eau.forfaits,rels[i].date);
     const photos=rels[i].photos||[];
     res.push({date:rels[i].date,releve:rels[i][locId],diff,prix,forf,photos,general,brut,deduit,manquants});
@@ -521,6 +525,10 @@ function renderLocataires(){
           ${renderForfaits(loc.elec.forfaits,'elec',loc.id)}
         </div>
         <button onclick="addForfait('elec','${loc.id}')" class="btn btn-s" style="font-size:11px;padding:4px 10px;margin-top:3px">+ Période</button>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--text2)">
+          <label>Tarif kWh (€) <input type="number" id="loc-tarif-elec-${loc.id}" step="0.0001" min="0" value="${+loc.elec.tarif>0?loc.elec.tarif:''}" placeholder="global ${S().tarifElec}" style="width:95px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:4px 6px;font-size:12px;color:var(--text);font-family:inherit;outline:none"/></label>
+          <label>Abonnement (€/mois) <input type="number" id="loc-abo-elec-${loc.id}" step="0.01" min="0" value="${+loc.elec.abo>0?loc.elec.abo:''}" placeholder="0" style="width:85px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:4px 6px;font-size:12px;color:var(--text);font-family:inherit;outline:none"/></label>
+        </div>
       </div>
 
       <!-- EAU -->
@@ -535,6 +543,9 @@ function renderLocataires(){
           ${renderForfaits(loc.eau.forfaits,'eau',loc.id)}
         </div>
         <button onclick="addForfait('eau','${loc.id}')" class="btn btn-s" style="font-size:11px;padding:4px 10px;margin-top:3px">+ Période</button>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--text2)">
+          <label>Tarif m³ (€) <input type="number" id="loc-tarif-eau-${loc.id}" step="0.01" min="0" value="${+loc.eau.tarif>0?loc.eau.tarif:''}" placeholder="global ${S().tarifEau}" style="width:95px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:4px 6px;font-size:12px;color:var(--text);font-family:inherit;outline:none"/></label>
+        </div>
         ${loc.eau.actif?`<div style="margin-top:8px;padding:8px 10px;background:var(--surf2);border-radius:var(--rsm);font-size:12px">
           <div style="font-weight:600;margin-bottom:4px">🔀 Compteur général ? Déduire la conso de :</div>
           ${S().locataires.filter(o=>o.id!==loc.id&&o.eau&&o.eau.actif).map(o=>`<label style="display:inline-flex;align-items:center;gap:4px;margin-right:12px">
@@ -592,7 +603,9 @@ function renderLocataires(){
       • <strong>Compteur général</strong> (ex. pizzeria) : conso = conso du compteur général − conso des logements cochés. Il faut relever tous les compteurs <strong>à la même date</strong>, sinon le mois est signalé « incomplet ».<br>
       • Badges de conso mensuelle : vert ≤ 5 m³, orange &gt; 5 m³, rouge &gt; 10 m³.<br>
       • Alerte dépassement : si la projection annuelle dépasse le forfait de plus de 10 € (élec : plus de 30 €).<br>
-      • Facture de charges (🧾) : coût réel élec + eau du mois (conso × tarif), une seule ligne « charges », TVA ${S().emetteur.tauxTva} %, numéro CH-AAAA-MM-001 (compteur remis à 001 chaque mois). Si l'eau n'a pas de relevé à la même date, la facture ne contient que l'électricité (un message prévient).<br>
+      • Tarifs : chaque locataire peut avoir son propre tarif kWh / m³ et un abonnement électricité mensuel (fiche locataire). Case vide = tarif global ci-dessus.<br>
+      • Coût électricité du mois = kWh × tarif du locataire + abonnement mensuel.<br>
+      • Facture de charges (🧾) : coût réel élec (abonnement compris) + eau du mois, une seule ligne « charges », TVA ${S().emetteur.tauxTva} %, numéro CH-AAAA-MM-001 (compteur remis à 001 chaque mois). Si l'eau n'a pas de relevé à la même date, la facture ne contient que l'électricité (un message prévient).<br>
       ${S().locataires.filter(estGeneral).map(g=>`• Actuellement : <strong>${g.nom}</strong> = compteur général − ${g.eau.deduire.map(id=>(S().locataires.find(l=>l.id===id)||{nom:'?'}).nom).join(' − ')}.`).join('<br>')||'• Aucun compteur général réglé pour le moment.'}
     </div>
   </div>
@@ -660,6 +673,11 @@ window.sauvegarderLocataires=async function(){
     const cw=document.getElementById("loc-eau-actif-"+loc.id);
     if(ce) loc.elec.actif=ce.checked;
     if(cw) loc.eau.actif=cw.checked;
+    const num=id=>{const el=document.getElementById(id); if(!el) return undefined; const v=parseFloat(el.value); return isNaN(v)||v<=0?null:v;};
+    const te=num("loc-tarif-elec-"+loc.id), ab=num("loc-abo-elec-"+loc.id), tw=num("loc-tarif-eau-"+loc.id);
+    if(te!==undefined){ if(te) loc.elec.tarif=te; else delete loc.elec.tarif; }
+    if(ab!==undefined){ if(ab) loc.elec.abo=ab; else delete loc.elec.abo; }
+    if(tw!==undefined){ if(tw) loc.eau.tarif=tw; else delete loc.eau.tarif; }
     if(loc.facture&&document.getElementById("fc-raison-"+loc.id)){
       ["raison","siren","adr1","adr2","tva"].forEach(k=>{ const el=document.getElementById(`fc-${k}-${loc.id}`); if(el) loc.facture[k]=el.value.trim(); });
     }
@@ -790,8 +808,8 @@ function getAlertes(type){
       const rest=12-an.length; if(rest<=0) return;
       const tot=an.reduce((s,d)=>s+d.diff,0);
       const moy=an.length>0?tot/an.length:0;
-      const tarif=type==='elec'?S().tarifElec:S().tarifEau;
-      const projPrix=+((tot+moy*rest)*tarif).toFixed(2);
+      const tarif=type==='elec'?TE(loc):TW(loc);
+      const projPrix=+((tot+moy*rest)*tarif+(type==='elec'?ABO(loc)*(an.length+rest):0)).toFixed(2);
       const lastForf=an[an.length-1].forf;
       const forfT=an.reduce((s,d)=>s+d.forf,0);
       const projForf=+(forfT+lastForf*rest).toFixed(0);
@@ -824,10 +842,10 @@ function renderElecReleves(){
   locs.forEach(loc=>{
     const diffs=calcElecDiffs(loc.id);
     const tot=diffs.reduce((s,d)=>s+d.diff,0);
-    const totP=+(tot*S().tarifElec).toFixed(2);
+    const totP=+(tot*TE(loc)+ABO(loc)*diffs.length).toFixed(2);
     h+=`<div class="card"><div class="ctitle" style="color:${loc.couleur}">
       <span class="loc-color" style="background:${loc.couleur}"></span>${loc.nom}
-      <span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${loc.appart}</span></div>`;
+      <span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${loc.appart} · ${TE(loc)} €/kWh${ABO(loc)?' + abonnement '+ABO(loc)+' €/mois':''}</span></div>`;
     if(!diffs.length){ h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé.</p>`; }
     else{
       h+=`<table><thead><tr><th>Mois</th><th>Relevé kWh</th><th>kWh</th><th>Coût €</th><th>Forfait €</th><th>Balance</th><th>📷</th><th></th></tr></thead><tbody>`;
@@ -875,12 +893,12 @@ function renderElecAnnuel(){
     const annee=diffs.filter(d=>getYear(d.date)===elecYear);
     const rest=12-annee.length;
     const total=annee.reduce((s,d)=>s+d.diff,0);
-    const totalP=+(total*S().tarifElec).toFixed(2);
+    const totalP=+(total*TE(loc)+ABO(loc)*annee.length).toFixed(2);
     const forfT=annee.reduce((s,d)=>s+d.forf,0);
     const bal=+(forfT-totalP).toFixed(2);
     const moy=annee.length>0?total/annee.length:0;
     const pKwh=+(total+moy*rest).toFixed(0);
-    const pP=+(pKwh*S().tarifElec).toFixed(2);
+    const pP=+(pKwh*TE(loc)+ABO(loc)*(annee.length+rest)).toFixed(2);
     const lastForf=annee.length>0?annee[annee.length-1].forf:0;
     const pForf=+(forfT+lastForf*rest).toFixed(0);
     const pBal=+(pForf-pP).toFixed(2);
@@ -905,14 +923,14 @@ function renderElecAnnuel(){
         const mNum=(lastM+i-1)%12+1; // numéro mois 1-12
         const mi=mNum-1;              // index MOIS 0-11
         const kwh=hasPrevData&&prevByMonth[mNum]!=null ? prevByMonth[mNum] : moy;
-        const pp=+(kwh*S().tarifElec).toFixed(2);
+        const pp=+(kwh*TE(loc)+ABO(loc)).toFixed(2);
         const pb=+(lastForf-pp).toFixed(2);
         const source=hasPrevData&&prevByMonth[mNum]!=null?"N-1":"moy";
         projKwhSaison+=kwh;
         projForfSaison+=lastForf;
         projMois.push({mi,mNum,kwh,pp,pb,source});
       }
-      const pPSaison=+(projKwhSaison*S().tarifElec).toFixed(2);
+      const pPSaison=+(projKwhSaison*TE(loc)+ABO(loc)*(annee.length+rest)).toFixed(2);
       const pBalSaison=+(projForfSaison-pPSaison).toFixed(2);
 
       if(rest>0&&pBalSaison<0)       h+=`<div class="abox err">⚠️ Dépassement estimé : <strong>${Math.abs(pBalSaison).toFixed(0)} €</strong> pour ${elecYear}.</div>`;
@@ -950,7 +968,7 @@ function renderElecAnnuel(){
         const mNum=+d.date.split("/")[1];
         return s+(prevByMonth[mNum]!=null?prevByMonth[mNum]:0);
       },0);
-      const prevTotalP=+(prevTotalKwh*S().tarifElec).toFixed(2);
+      const prevTotalP=+(prevTotalKwh*TE(loc)+ABO(loc)*annee.length).toFixed(2);
       const hasPrevTotal=prevDiffs.length>0;
       const diffPct=hasPrevTotal&&prevTotalKwh>0?+(((total-prevTotalKwh)/prevTotalKwh)*100).toFixed(1):null;
 
@@ -1052,7 +1070,7 @@ function renderEauReleves(){
     const tot=diffs.reduce((s,d)=>s+d.diff,0);
     const totP=diffs.reduce((s,d)=>s+d.prix,0);
     h+=`<div class="card"><div class="ctitle" style="color:var(--teal)">
-      💧 ${loc.nom}<span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${loc.appart} · ${S().tarifEau} €/m³</span></div>`;
+      💧 ${loc.nom}<span style="font-size:12px;font-weight:400;color:var(--text2)"> — ${loc.appart} · ${TW(loc)} €/m³</span></div>`;
     if(estGeneral(loc)) h+=`<div class="abox warn" style="margin-bottom:8px">🔀 Compteur général : la conso affichée = compteur général − ${loc.eau.deduire.map(id=>(S().locataires.find(l=>l.id===id)||{nom:'?'}).nom).join(' − ')}.</div>`;
     if(!diffs.length){ h+=`<p style="color:var(--text3);font-size:12px;font-style:italic">Aucun relevé.</p>`; }
     else{
@@ -1102,12 +1120,12 @@ function renderEauAnnuel(){
     const annee=diffs.filter(d=>getYear(d.date)===eauYear);
     const rest=12-annee.length;
     const total=annee.reduce((s,d)=>s+d.diff,0);
-    const totalP=+(total*S().tarifEau).toFixed(2);
+    const totalP=+(total*TW(loc)).toFixed(2);
     const forfT=annee.reduce((s,d)=>s+d.forf,0);
     const bal=+(forfT-totalP).toFixed(2);
     const moy=annee.length>0?total/annee.length:0;
     const pM3=+(total+moy*rest).toFixed(2);
-    const pP=+(pM3*S().tarifEau).toFixed(2);
+    const pP=+(pM3*TW(loc)).toFixed(2);
     const lastForf=annee.length>0?annee[annee.length-1].forf:0;
     const pForf=+(forfT+lastForf*rest).toFixed(0);
     const pBal=+(pForf-pP).toFixed(2);
@@ -1129,14 +1147,14 @@ function renderEauAnnuel(){
         const mNum=(lastM+i-1)%12+1;
         const mi=mNum-1;
         const m3=hasPrevW&&prevByMonthW[mNum]!=null ? prevByMonthW[mNum] : moy;
-        const pp=+(m3*S().tarifEau).toFixed(2);
+        const pp=+(m3*TW(loc)).toFixed(2);
         const pb=+(lastForf-pp).toFixed(2);
         const source=hasPrevW&&prevByMonthW[mNum]!=null?"N-1":"moy";
         projM3Saison+=m3;
         projForfSaisonW+=lastForf;
         projMoisW.push({mi,mNum,m3,pp,pb,source});
       }
-      const pPSaisonW=+(projM3Saison*S().tarifEau).toFixed(2);
+      const pPSaisonW=+(projM3Saison*TW(loc)).toFixed(2);
       const pBalSaisonW=+(projForfSaisonW-pPSaisonW).toFixed(2);
 
       if(rest>0&&pBalSaisonW<0)       h+=`<div class="abox err">⚠️ Dépassement estimé : <strong>${Math.abs(pBalSaisonW).toFixed(0)} €</strong> pour ${eauYear}.</div>`;
@@ -1164,7 +1182,7 @@ function renderEauAnnuel(){
         const mNum=+d.date.split("/")[1];
         return s+(prevByMonthW[mNum]!=null?prevByMonthW[mNum]:0);
       },0);
-      const prevTotalPW=+(prevTotalM3*S().tarifEau).toFixed(2);
+      const prevTotalPW=+(prevTotalM3*TW(loc)).toFixed(2);
       const diffPctW=hasPrevW&&prevTotalM3>0?+(((total-prevTotalM3)/prevTotalM3)*100).toFixed(1):null;
 
       h+=`<tr class="tot">
