@@ -105,7 +105,7 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
 <div class="app">
   <div class="hdr">
     <div style="font-size:26px">🏠</div>
-    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 15:40</span></p></div>
+    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 16:30</span></p></div>
     <span id="sync" class="sync busy"><span class="spin"></span>Chargement…</span>
   </div>
   <div class="tabs">
@@ -592,7 +592,7 @@ function renderLocataires(){
       • <strong>Compteur général</strong> (ex. pizzeria) : conso = conso du compteur général − conso des logements cochés. Il faut relever tous les compteurs <strong>à la même date</strong>, sinon le mois est signalé « incomplet ».<br>
       • Badges de conso mensuelle : vert ≤ 5 m³, orange &gt; 5 m³, rouge &gt; 10 m³.<br>
       • Alerte dépassement : si la projection annuelle dépasse le forfait de plus de 10 € (élec : plus de 30 €).<br>
-      • Facture de charges (🧾) : coût réel élec + eau du mois (conso × tarif), une seule ligne « charges », TVA ${S().emetteur.tauxTva} %. Si l'eau n'a pas de relevé à la même date, la facture ne contient que l'électricité (un message prévient).<br>
+      • Facture de charges (🧾) : coût réel élec + eau du mois (conso × tarif), une seule ligne « charges », TVA ${S().emetteur.tauxTva} %, numéro CH-AAAA-MM-001 (compteur remis à 001 chaque mois). Si l'eau n'a pas de relevé à la même date, la facture ne contient que l'électricité (un message prévient).<br>
       ${S().locataires.filter(estGeneral).map(g=>`• Actuellement : <strong>${g.nom}</strong> = compteur général − ${g.eau.deduire.map(id=>(S().locataires.find(l=>l.id===id)||{nom:'?'}).nom).join(' − ')}.`).join('<br>')||'• Aucun compteur général réglé pour le moment.'}
     </div>
   </div>
@@ -1274,8 +1274,11 @@ window.factureCharges=async function(locId,date){
   const [jj,mm,aa]=date.split("/");
   let fc=S().facturesCharges.find(x=>x.locId===locId&&x.date===date);
   if(!fc){
-    const n=S().facturesCharges.filter(x=>x.num.startsWith("CH-"+aa+"-")).length+1;
-    fc={num:`CH-${aa}-${String(n).padStart(3,"0")}`,locId,date,emise:new Date().toLocaleDateString('fr-FR')};
+    // Numéro CH-AAAA-MM-001 : année et mois de la date de facture, compteur remis à 001 chaque mois
+    const now=new Date(), fa=now.getFullYear(), fm=String(now.getMonth()+1).padStart(2,"0");
+    const pref=`CH-${fa}-${fm}-`;
+    const n=S().facturesCharges.filter(x=>x.num.startsWith(pref)).length+1;
+    fc={num:`${pref}${String(n).padStart(3,"0")}`,locId,date,emise:now.toLocaleDateString('fr-FR')};
     S().facturesCharges.push(fc);
   }
   Object.assign(fc,{ht,tva,ttc,debut});
