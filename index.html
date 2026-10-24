@@ -108,7 +108,7 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
 <div class="app">
   <div class="hdr">
     <div style="font-size:26px">🏠</div>
-    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 18:14</span></p></div>
+    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 20:25</span></p></div>
     <span id="sync" class="sync busy"><span class="spin"></span>Chargement…</span>
     <a class="app-switch" href="https://cevapizza11.github.io/gestionlocative/" title="Ouvrir l'appli Gestion locative (quittances, factures, baux)">📄 Gestion locative →</a>
   </div>
@@ -1301,7 +1301,7 @@ async function choisirDossierTVA(){
     return h;
   }catch(e){
     console.warn("Dossier TVA non choisi",e);
-    if(e&&e.name!=="AbortError") alert("Ce dossier ne peut pas être choisi ("+e.message+").\nAstuce : la racine de Téléchargements est interdite par le navigateur, choisissez le dossier « Gestion locative » à l'intérieur.");
+    if(e&&e.name!=="AbortError") alert("Ce dossier ne peut pas être choisi ("+e.message+").\nAstuce : choisissez le dossier « Gestion locative » dans Google Drive (Mon Drive), pas la racine du disque.");
     return null;
   }
 }
@@ -1316,7 +1316,7 @@ function demanderDossierTVA(){
     ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px";
     ov.innerHTML=`<div style="background:var(--surf);color:var(--text);border-radius:12px;padding:20px;max-width:440px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3)">
       <div style="font-weight:600;font-size:15px;margin-bottom:8px">📁 Où ranger les factures de charges ?</div>
-      <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:14px">Cliquez sur « Choisir le dossier », allez dans <b>Téléchargements</b>, créez le dossier <b>« Gestion locative »</b> (bouton « Nouveau dossier »), ouvrez-le puis validez.<br>L'appli y créera chaque mois le sous-dossier « TVA SCI THOMARION <i>MOIS ANNÉE</i> ». C'est le même dossier que l'appli Gestion locative. Ce choix est mémorisé.</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:14px">Cliquez sur « Choisir le dossier », allez dans <b>Google Drive → Mon Drive</b> (lecteur G: en général), ouvrez le dossier <b>« Gestion locative »</b> (ou créez-le) puis validez.<br>L'appli y créera chaque mois le sous-dossier « TVA SCI THOMARION <i>MOIS ANNÉE</i> ». C'est le même dossier que l'appli Gestion locative. Ce choix est mémorisé.</div>
       <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
         <button id="dtva-dl" class="btn btn-s">Télécharger sans ranger</button>
         <button id="dtva-ok" class="btn btn-p">📁 Choisir le dossier</button>
@@ -1413,7 +1413,7 @@ window.factureCharges=async function(locId,date){
       const ou=await rangerPDF(dirTVA,pdf.output("blob"),nomFichier,fc.emise);
       alert("✅ Facture "+fc.num+" rangée dans :\n"+ou);
       return;
-    }catch(e){ console.error(e); alert("Rangement impossible ("+e.message+"). La facture est téléchargée normalement."); }
+    }catch(e){ console.error(e); alert("Rangement impossible ("+e.message+").\nSi vous avez déplacé le dossier « Gestion locative » (ex. vers Google Drive), refaites une fois 👤 Locataires → « Choisir / changer le dossier ».\nLa facture est téléchargée normalement."); }
   }
   pdf.save(nomFichier);
 };
