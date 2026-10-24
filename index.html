@@ -105,7 +105,7 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
 <div class="app">
   <div class="hdr">
     <div style="font-size:26px">🏠</div>
-    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 17:35</span></p></div>
+    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 17:50</span></p></div>
     <span id="sync" class="sync busy"><span class="spin"></span>Chargement…</span>
   </div>
   <div class="tabs">
@@ -1274,22 +1274,50 @@ const eur=n=>n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDi
 // Ensuite chaque facture va dans le sous-dossier « TVA SCI THOMARION <MOIS> <ANNÉE> ».
 const MOIS_LONG=["JANVIER","FÉVRIER","MARS","AVRIL","MAI","JUIN","JUILLET","AOÛT","SEPTEMBRE","OCTOBRE","NOVEMBRE","DÉCEMBRE"];
 const idb=(mode,fn)=>new Promise((res,rej)=>{const o=indexedDB.open("jeancamp_fs",1);o.onupgradeneeded=()=>o.result.createObjectStore("h");o.onsuccess=()=>{const tx=o.result.transaction("h",mode);const r=fn(tx.objectStore("h"));tx.oncomplete=()=>res(r&&r.result);tx.onerror=()=>rej(tx.error);};o.onerror=()=>rej(o.error);});
-async function dossierTVA(forcerChoix){
+// Retourne le dossier mémorisé (autorisation redemandée si besoin), "choisir" s'il faut en choisir un, null si non compatible.
+async function dossierTVA(){
   if(!window.showDirectoryPicker) return null;             // iPhone / navigateur non compatible → téléchargement normal
   try{
-    let h=forcerChoix?null:await idb("readonly",st=>st.get("tva"));
-    if(h){
-      let perm=await h.queryPermission({mode:"readwrite"});
-      if(perm!=="granted") perm=await h.requestPermission({mode:"readwrite"});
-      if(perm==="granted") return h;
-    }
-    alert("Choisissez le dossier où ranger les factures de charges.\n\nConseil : dans Téléchargements, créez (ou choisissez) le dossier « TVA SCI THOMARION ». L'appli y créera chaque mois le sous-dossier « TVA SCI THOMARION <MOIS> <ANNÉE> ».");
-    h=await window.showDirectoryPicker({id:"tva-sci",mode:"readwrite",startIn:"downloads"});
+    const h=await idb("readonly",st=>st.get("tva"));
+    if(!h) return "choisir";
+    let perm=await h.queryPermission({mode:"readwrite"});
+    if(perm!=="granted") perm=await h.requestPermission({mode:"readwrite"});
+    return perm==="granted"?h:"choisir";
+  }catch(e){ console.warn(e); return "choisir"; }
+}
+// Ouvre le sélecteur : à appeler DIRECTEMENT depuis un clic (sinon le navigateur bloque la fenêtre)
+async function choisirDossierTVA(){
+  try{
+    const h=await window.showDirectoryPicker({id:"tva-sci",mode:"readwrite",startIn:"downloads"});
     await idb("readwrite",st=>st.put(h,"tva"));
     return h;
-  }catch(e){ console.warn("Dossier TVA non choisi",e); return null; }
+  }catch(e){
+    console.warn("Dossier TVA non choisi",e);
+    if(e&&e.name!=="AbortError") alert("Ce dossier ne peut pas être choisi ("+e.message+").\nAstuce : la racine de Téléchargements est interdite par le navigateur, choisissez le dossier « TVA SCI THOMARION » à l'intérieur.");
+    return null;
+  }
 }
-window.changerDossierTVA=async function(){ const h=await dossierTVA(true); if(h){ alert("✅ Dossier de rangement : "+h.name); renderLocataires(); } };
+window.changerDossierTVA=async function(){
+  if(!window.showDirectoryPicker){ alert("Ce navigateur ne permet pas le rangement automatique : les factures seront téléchargées normalement."); return; }
+  const h=await choisirDossierTVA(); if(h){ alert("✅ Dossier de rangement : "+h.name); renderLocataires(); }
+};
+// Petite fenêtre dans la page : le clic sur « Choisir le dossier » ouvre le sélecteur
+function demanderDossierTVA(){
+  return new Promise(res=>{
+    const ov=document.createElement("div");
+    ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px";
+    ov.innerHTML=`<div style="background:var(--surf);color:var(--text);border-radius:12px;padding:20px;max-width:440px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3)">
+      <div style="font-weight:600;font-size:15px;margin-bottom:8px">📁 Où ranger les factures de charges ?</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:14px">Cliquez sur « Choisir le dossier », allez dans <b>Téléchargements</b>, créez le dossier <b>« TVA SCI THOMARION »</b> (bouton « Nouveau dossier »), ouvrez-le puis validez.<br>L'appli y créera chaque mois le sous-dossier « TVA SCI THOMARION <i>MOIS ANNÉE</i> ». Ce choix est mémorisé.</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button id="dtva-dl" class="btn btn-s">Télécharger sans ranger</button>
+        <button id="dtva-ok" class="btn btn-p">📁 Choisir le dossier</button>
+      </div></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector("#dtva-ok").onclick=async()=>{ const h=await choisirDossierTVA(); ov.remove(); res(h); };
+    ov.querySelector("#dtva-dl").onclick=()=>{ ov.remove(); res(null); };
+  });
+}
 async function rangerPDF(dir,blob,nomFichier,dateFacture){
   const [,m,a]=dateFacture.split("/");
   const nomDossier=`${(S().emetteur.dossierTVA||"TVA SCI THOMARION")} ${MOIS_LONG[+m-1]} ${a}`;
@@ -1301,7 +1329,8 @@ async function rangerPDF(dir,blob,nomFichier,dateFacture){
 
 window.factureCharges=async function(locId,date){
   const loc=S().locataires.find(l=>l.id===locId); if(!loc||!loc.facture) return;
-  const dirTVA=await dossierTVA(false);   // demandé tout de suite (le navigateur exige que ce soit juste après le clic)
+  let dirTVA=await dossierTVA();          // demandé tout de suite (le navigateur exige que ce soit juste après le clic)
+  if(dirTVA==="choisir") dirTVA=await demanderDossierTVA();
   const f=loc.facture, E=S().emetteur;
   if(!f.raison){alert("Renseignez la raison sociale du locataire dans 👤 Locataires.");return;}
   const de=(loc.elec&&loc.elec.actif)?calcElecDiffs(locId).find(d=>d.date===date):null;
