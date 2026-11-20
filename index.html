@@ -101,6 +101,7 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
   .tab{font-size:11px;padding:7px 3px;}
   .forfait-item{flex-direction:column;align-items:flex-start;}
 }
+#ph-drop.over{border-color:var(--blue);background:rgba(26,111,196,.06);}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -108,7 +109,7 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
 <div class="app">
   <div class="hdr">
     <div style="font-size:26px">🏠</div>
-    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.24/10/2026 20:25</span></p></div>
+    <div><h1>Suivi Jean Camp</h1><p>Narbonne · Électricité & Eau · <span style="font-weight:600">v.20/11/2026 09:56</span></p></div>
     <span id="sync" class="sync busy"><span class="spin"></span>Chargement…</span>
     <a class="app-switch" href="https://cevapizza11.github.io/gestionlocative/" title="Ouvrir l'appli Gestion locative (quittances, factures, baux)">📄 Gestion locative →</a>
   </div>
@@ -117,11 +118,13 @@ tr.proj.alerte td{background:var(--warn-bg);color:var(--warn);font-style:normal;
     <button class="tab" onclick="showTab('locataires')">👤 Locataires</button>
     <button class="tab" onclick="showTab('elec')">⚡ Électricité</button>
     <button class="tab" onclick="showTab('eau')">💧 Eau</button>
+    <button class="tab" onclick="showTab('photos')">📷 Photos</button>
   </div>
   <div id="pane-board" class="pane active"></div>
   <div id="pane-locataires" class="pane"></div>
   <div id="pane-elec" class="pane"></div>
   <div id="pane-eau" class="pane"></div>
+  <div id="pane-photos" class="pane"></div>
 </div>
 
 <script>
@@ -328,7 +331,7 @@ window.save=sauvegarder;
 // ════════════════════════════════════════════════════════════
 //  ROUTING
 // ════════════════════════════════════════════════════════════
-const TABS=["board","locataires","elec","eau"];
+const TABS=["board","locataires","elec","eau","photos"];
 let elecSub="releves", eauSub="releves";
 let elecYear=null, eauYear=null;
 
@@ -337,6 +340,7 @@ function render(name){
   else if(name==="locataires") renderLocataires();
   else if(name==="elec")   renderElec();
   else if(name==="eau")    renderEau();
+  else if(name==="photos") renderPhotos();
 }
 function refreshCurrent(){
   const i=[...document.querySelectorAll(".tab")].findIndex(e=>e.classList.contains("active"));
@@ -531,6 +535,7 @@ function renderLocataires(){
         <button onclick="addForfait('elec','${loc.id}')" class="btn btn-s" style="font-size:11px;padding:4px 10px;margin-top:3px">+ Période</button>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--text2)">
           <label>Tarif kWh (€) <input type="number" id="loc-tarif-elec-${loc.id}" step="0.0001" min="0" value="${+loc.elec.tarif>0?loc.elec.tarif:''}" placeholder="global ${S().tarifElec}" style="width:95px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:4px 6px;font-size:12px;color:var(--text);font-family:inherit;outline:none"/></label>
+          <label>N° compteur <input type="text" id="loc-num-elec-${loc.id}" value="${loc.elec.numCompteur||''}" placeholder="lu sur la photo" style="width:130px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:4px 6px;font-size:12px;color:var(--text);font-family:inherit;outline:none"/></label>
           <label>Abonnement (€/mois) <input type="number" id="loc-abo-elec-${loc.id}" step="0.01" min="0" value="${+loc.elec.abo>0?loc.elec.abo:''}" placeholder="0" style="width:85px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:4px 6px;font-size:12px;color:var(--text);font-family:inherit;outline:none"/></label>
         </div>
       </div>
@@ -549,6 +554,7 @@ function renderLocataires(){
         <button onclick="addForfait('eau','${loc.id}')" class="btn btn-s" style="font-size:11px;padding:4px 10px;margin-top:3px">+ Période</button>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--text2)">
           <label>Tarif m³ (€) <input type="number" id="loc-tarif-eau-${loc.id}" step="0.01" min="0" value="${+loc.eau.tarif>0?loc.eau.tarif:''}" placeholder="global ${S().tarifEau}" style="width:95px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:4px 6px;font-size:12px;color:var(--text);font-family:inherit;outline:none"/></label>
+          <label>N° compteur <input type="text" id="loc-num-eau-${loc.id}" value="${loc.eau.numCompteur||''}" placeholder="lu sur la photo" style="width:130px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:4px 6px;font-size:12px;color:var(--text);font-family:inherit;outline:none"/></label>
         </div>
         ${loc.eau.actif?`<div style="margin-top:8px;padding:8px 10px;background:var(--surf2);border-radius:var(--rsm);font-size:12px">
           <div style="font-weight:600;margin-bottom:4px">🔀 Compteur général ? Déduire la conso de :</div>
@@ -603,15 +609,28 @@ function renderLocataires(){
     <div style="font-size:11px;color:var(--text3);margin-top:6px">La facture reprend le coût réel (électricité + eau) du mois, sur une seule ligne « Refacturation de charges locatives », sans marge. Si les tarifs sont TTC, le total TTC de la facture = coût payé au fournisseur.</div>
   </div>
   <div class="card" style="margin-top:8px">
+    <div class="ctitle">📷 Lecture des photos et rangement Drive (script Google)</div>
+    <div class="fgrid">
+      <div class="fg"><label>Adresse du script (…/exec)</label><input type="text" id="sg-url" value="${(S().scriptGoogle&&S().scriptGoogle.url)||''}" placeholder="https://script.google.com/macros/s/…/exec"/></div>
+      <div class="fg"><label>Mot de passe (TOKEN)</label><input type="text" id="sg-token" value="${(S().scriptGoogle&&S().scriptGoogle.token)||''}"/></div>
+      <div class="fg"><label>Facture de charges automatique</label><select id="sg-auto"><option value="oui" ${autoFacture()?'selected':''}>Oui, dès que les relevés sont validés</option><option value="non" ${!autoFacture()?'selected':''}>Non, je clique sur 🧾 moi-même</option></select></div>
+      <div class="fg"><label>Test</label><button class="btn btn-s" onclick="testerScript()" style="font-size:12px">🔌 Tester la connexion</button></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3)">Quand le script est réglé : les photos sont rangées dans Drive → « RELEVER ELECTRICITE ENSEMBLE JEAN CAMP » → « ELECTRICITE <i>MOIS ANNÉE</i> » / « EAU <i>MOIS ANNÉE</i> », et les factures de charges dans Drive → « GESTION LOCATIVE » → « <i>AAAA-MM MOIS ANNÉE</i> » (sur PC comme sur iPhone).</div>
+  </div>
+  <div class="card" style="margin-top:8px">
     <div class="ctitle">ℹ️ Règles de calcul de l'eau</div>
     <div style="font-size:12px;color:var(--text2);line-height:1.6">
       • Conso du mois = relevé du mois − relevé précédent, × tarif m³.<br>
       • <strong>Compteur général</strong> (ex. pizzeria) : conso = conso du compteur général − conso des logements cochés. Il faut relever tous les compteurs <strong>à la même date</strong>, sinon le mois est signalé « incomplet ».<br>
-      • Badges de conso mensuelle : vert ≤ 5 m³, orange &gt; 5 m³, rouge &gt; 10 m³.<br>
+      • Badges de conso mensuelle eau : vert ≤ 5 m³, orange &gt; 5 m³, rouge &gt; 10 m³. Électricité : vert ≤ 200 kWh, orange &gt; 200 kWh, rouge &gt; 400 kWh.<br>
       • Alerte dépassement : si la projection annuelle dépasse le forfait de plus de 10 € (élec : plus de 30 €).<br>
       • Tarifs : chaque locataire peut avoir son propre tarif kWh / m³ et un abonnement électricité mensuel (fiche locataire). Case vide = tarif global ci-dessus.<br>
       • Coût électricité du mois = kWh × tarif du locataire + abonnement mensuel.<br>
       • Facture de charges (🧾) : coût réel élec (abonnement compris) + eau du mois, une seule ligne « charges », TVA ${S().emetteur.tauxTva} %, numéro CH-AAAA-MM-001 (compteur remis à 001 chaque mois). Sur PC (Chrome, Edge ou Opera), le PDF est rangé automatiquement dans le sous-dossier « ${S().emetteur.dossierTVA||'TVA SCI THOMARION'} MOIS ANNÉE » du dossier principal « Gestion locative » (le même que l'appli Gestion locative) ; sur iPhone, il est téléchargé normalement. Si l'eau n'a pas de relevé à la même date, la facture ne contient que l'électricité (un message prévient).<br>
+      • <strong>Photos 📷</strong> : la photo est lue par l'IA (Gemini) ; le locataire est trouvé par le <strong>N° de compteur</strong> (fiche locataire, mémorisé automatiquement à la 1re validation), sinon deviné par l'index le plus proche au-dessus du dernier relevé (marqué « deviné »). Contrôles avant validation : 🔴 index inférieur au dernier relevé (bloquant), 🟠 conso supérieure à ${SEUIL_PHOTO.elec} kWh ou ${SEUIL_PHOTO.eau} m³ depuis le dernier relevé, 🟠 photo jugée peu lisible par l'IA, 🔴 même compteur sur deux photos (bloquant). Tout reste modifiable avant de valider.<br>
+      • Date du relevé = date de prise de la photo (la plus fréquente du lot), modifiable. Sous-dossier Drive de chaque photo = mois de sa prise de vue.<br>
+      • Facture automatique : ${autoFacture()?'<strong>activée</strong>':'désactivée'} — après validation, une facture de charges est créée pour chaque locataire « société » dont tous les compteurs (élec et eau actifs) ont un relevé à cette date et dont l'eau est complète ; sinon elle n'est pas créée et l'appli dit ce qui manque.<br>
       ${S().locataires.filter(estGeneral).map(g=>`• Actuellement : <strong>${g.nom}</strong> = compteur général − ${g.eau.deduire.map(id=>(S().locataires.find(l=>l.id===id)||{nom:'?'}).nom).join(' − ')}.`).join('<br>')||'• Aucun compteur général réglé pour le moment.'}
     </div>
   </div>
@@ -684,6 +703,7 @@ window.sauvegarderLocataires=async function(){
     if(te!==undefined){ if(te) loc.elec.tarif=te; else delete loc.elec.tarif; }
     if(ab!==undefined){ if(ab) loc.elec.abo=ab; else delete loc.elec.abo; }
     if(tw!==undefined){ if(tw) loc.eau.tarif=tw; else delete loc.eau.tarif; }
+    ["elec","eau"].forEach(t=>{ const el=document.getElementById(`loc-num-${t}-${loc.id}`); if(el){ const v=el.value.replace(/\s+/g,'').trim(); if(v) loc[t].numCompteur=v; else delete loc[t].numCompteur; } });
     if(loc.facture&&document.getElementById("fc-raison-"+loc.id)){
       ["raison","siren","adr1","adr2","tva"].forEach(k=>{ const el=document.getElementById(`fc-${k}-${loc.id}`); if(el) loc.facture[k]=el.value.trim(); });
     }
@@ -693,6 +713,8 @@ window.sauvegarderLocataires=async function(){
   const ed=document.getElementById("em-dossier"); if(ed&&ed.value.trim()) E.dossierTVA=ed.value.trim();
   const tx=parseFloat((document.getElementById("em-taux")||{}).value); if(!isNaN(tx)&&tx>=0) E.tauxTva=tx;
   const tt=document.getElementById("em-ttc"); if(tt) E.tarifsTTC=tt.value==="ttc";
+  const su=document.getElementById("sg-url"), sk=document.getElementById("sg-token"), sa=document.getElementById("sg-auto");
+  if(su){ S().scriptGoogle={...(S().scriptGoogle||{}),url:su.value.trim(),token:sk.value.trim(),auto:sa.value==="oui"}; }
   const te=parseFloat(document.getElementById("glob-tarif-elec").value);
   const tw=parseFloat(document.getElementById("glob-tarif-eau").value);
   if(!isNaN(te)&&te>0) S().tarifElec=te;
@@ -1335,20 +1357,44 @@ async function rangerPDF(dir,blob,nomFichier,dateFacture){
   return `${dir.name}\\${nomDossier}`;
 }
 
+// Bouton 🧾 : crée la facture puis la range (Drive via script, sinon dossier PC, sinon téléchargement)
 window.factureCharges=async function(locId,date){
-  const loc=S().locataires.find(l=>l.id===locId); if(!loc||!loc.facture) return;
-  let dirTVA=await dossierTVA();          // demandé tout de suite (le navigateur exige que ce soit juste après le clic)
-  if(dirTVA==="choisir") dirTVA=await demanderDossierTVA();
+  const viaScript=scriptOK();
+  let dirTVA=null;
+  if(!viaScript){ dirTVA=await dossierTVA(); if(dirTVA==="choisir") dirTVA=await demanderDossierTVA(); } // juste après le clic
+  const r=await creerFactureCharges(locId,date,{interactif:true});
+  if(!r.ok){ if(r.msg) alert(r.msg); return; }
+  if(viaScript){
+    try{ const o=await rangerFactureDrive(r); alert("✅ Facture "+r.fc.num+" rangée dans Drive :\n"+o.dossier); return; }
+    catch(e){ console.error(e); alert("Rangement dans Drive impossible ("+e.message+").\nLa facture est téléchargée normalement."); }
+  } else if(dirTVA){
+    try{
+      const ou=await rangerPDF(dirTVA,r.pdf.output("blob"),r.nomFichier,r.fc.emise);
+      alert("✅ Facture "+r.fc.num+" rangée dans :\n"+ou);
+      return;
+    }catch(e){ console.error(e); alert("Rangement impossible ("+e.message+").\nSi vous avez déplacé le dossier « Gestion locative » (ex. vers Google Drive), refaites une fois 👤 Locataires → « Choisir / changer le dossier ».\nLa facture est téléchargée normalement."); }
+  }
+  r.pdf.save(r.nomFichier);
+};
+
+// Construit la facture (numéro + PDF). interactif=false : aucune question, renvoie la raison si elle ne peut pas être faite.
+async function creerFactureCharges(locId,date,{interactif}={}){
+  const loc=S().locataires.find(l=>l.id===locId); if(!loc||!loc.facture) return {ok:false,msg:""};
   const f=loc.facture, E=S().emetteur;
-  if(!f.raison){alert("Renseignez la raison sociale du locataire dans 👤 Locataires.");return;}
+  if(!f.raison) return {ok:false,msg:"Renseignez la raison sociale du locataire dans 👤 Locataires."};
   const de=(loc.elec&&loc.elec.actif)?calcElecDiffs(locId).find(d=>d.date===date):null;
   const dw=(loc.eau&&loc.eau.actif)?calcEauDiffs(locId).find(d=>d.date===date):null;
-  if(!de&&!dw){alert("Aucune consommation à cette date.");return;}
+  if(!de&&!dw) return {ok:false,msg:"Aucune consommation à cette date."};
+  if(loc.elec&&loc.elec.actif&&!de){
+    if(!interactif) return {ok:false,msg:"relevé d'électricité manquant au "+date};
+  }
   if(loc.elec&&loc.elec.actif&&loc.eau&&loc.eau.actif&&!dw){
-    if(!confirm("Pas de relevé d'eau au "+date+" : la facture ne contiendra que l'électricité. Continuer ?")) return;
+    if(!interactif) return {ok:false,msg:"relevé d'eau manquant au "+date};
+    if(!confirm("Pas de relevé d'eau au "+date+" : la facture ne contiendra que l'électricité. Continuer ?")) return {ok:false,msg:""};
   }
   if(dw&&dw.manquants&&dw.manquants.length){
-    if(!confirm("Eau incomplète (relevé manquant : "+dw.manquants.join(', ')+"). Continuer quand même ?")) return;
+    if(!interactif) return {ok:false,msg:"eau incomplète (relevé manquant : "+dw.manquants.join(', ')+")"};
+    if(!confirm("Eau incomplète (relevé manquant : "+dw.manquants.join(', ')+"). Continuer quand même ?")) return {ok:false,msg:""};
   }
   // Période : du relevé précédent à ce relevé
   const src=de?S().elec.releves.filter(r=>r[locId]!=null):S().eau.releves.filter(r=>r[locId]!=null);
@@ -1360,7 +1406,6 @@ window.factureCharges=async function(locId,date){
   if(E.tarifsTTC){ ttc=cout; ht=+(ttc/(1+taux/100)).toFixed(2); tva=+(ttc-ht).toFixed(2); }
   else { ht=cout; tva=+(ht*taux/100).toFixed(2); ttc=+(ht+tva).toFixed(2); }
   // Numéro (réutilisé si déjà émis pour ce locataire et cette date)
-  const [jj,mm,aa]=date.split("/");
   let fc=S().facturesCharges.find(x=>x.locId===locId&&x.date===date);
   if(!fc){
     // Numéro CH-AAAA-MM-001 : année et mois de la date de facture, compteur remis à 001 chaque mois
@@ -1407,16 +1452,17 @@ window.factureCharges=async function(locId,date){
   pdf.text(cond,ml,y);
   pdf.setDrawColor(0); pdf.line(ml,282,W-mr,282); pdf.setFontSize(7.5);
   pdf.text(`${E.nom} - ${E.adr1}, ${E.adr2} - SIRET ${E.siret} - TVA ${E.tva}`,W/2,286,{align:"center"});
-  const nomFichier=`Facture_charges_${fc.num}_${f.raison.replace(/[^A-Za-z0-9]+/g,'_')}.pdf`;
-  if(dirTVA){
-    try{
-      const ou=await rangerPDF(dirTVA,pdf.output("blob"),nomFichier,fc.emise);
-      alert("✅ Facture "+fc.num+" rangée dans :\n"+ou);
-      return;
-    }catch(e){ console.error(e); alert("Rangement impossible ("+e.message+").\nSi vous avez déplacé le dossier « Gestion locative » (ex. vers Google Drive), refaites une fois 👤 Locataires → « Choisir / changer le dossier ».\nLa facture est téléchargée normalement."); }
-  }
-  pdf.save(nomFichier);
-};
+  const [,em,ea]=fc.emise.split("/");
+  const nomFichier=`${ea}-${em}_${fc.num}_${E.nom.replace(/[^A-Za-z0-9]+/g,'_')}_vers_${f.raison.replace(/^(SASU|SAS|SARL|EURL|SCI)\s+/i,'').replace(/[^A-Za-z0-9]+/g,'_')}_Charges.pdf`;
+  return {ok:true,fc,pdf,nomFichier,loc};
+}
+
+async function rangerFactureDrive(r){
+  const dataUri=r.pdf.output("datauristring");
+  const o=await appelScript({action:"facture",date:r.fc.emise,nom:r.nomFichier,pdf:dataUri.split(",")[1]});
+  r.fc.url=o.url; await sauvegarder();
+  return o;
+}
 
 // ════════════════════════════════════════════════════════════
 //  MODIFICATION INLINE + PHOTOS
@@ -1497,6 +1543,302 @@ window.toggleElecPaye=async function(locId,date,val){
   await sauvegarder();
   renderElecAnnuel();
 };
+
+// ════════════════════════════════════════════════════════════
+//  PHOTOS DES COMPTEURS : lecture IA (Gemini via script Google) + rangement Drive
+// ════════════════════════════════════════════════════════════
+const SEUIL_PHOTO={elec:1500,eau:30};   // conso jugée anormale depuis le dernier relevé (alerte 🟠)
+const scriptOK=()=>!!(S().scriptGoogle&&S().scriptGoogle.url&&S().scriptGoogle.token);
+const autoFacture=()=>!(S().scriptGoogle&&S().scriptGoogle.auto===false);
+let LOT=[];            // photos en cours : {id,nom,thumb,b64,datePhoto,statut,res,type,locId,index,devine,erreur}
+let LOT_DATE=null;     // date commune du relevé (JJ/MM/AAAA)
+let LOT_BILAN=null;    // compte rendu après validation
+
+async function appelScript(payload){
+  const sg=S().scriptGoogle||{};
+  if(!sg.url||!sg.token) throw new Error("script Google non réglé (👤 Locataires → 📷 Lecture des photos)");
+  const r=await fetch(sg.url,{method:"POST",body:JSON.stringify({...payload,token:sg.token})});
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  const o=await r.json();
+  if(!o.ok) throw new Error(o.erreur||"erreur du script");
+  return o;
+}
+window.testerScript=async function(){
+  const su=document.getElementById("sg-url"), sk=document.getElementById("sg-token");
+  if(su) S().scriptGoogle={...(S().scriptGoogle||{}),url:su.value.trim(),token:sk.value.trim()};
+  try{
+    const o=await appelScript({action:"ping"});
+    alert("✅ Connexion OK\nDossier des relevés : "+o.dossier+"\nClé Gemini : "+(o.gemini?"présente":"ABSENTE (à ajouter dans le script)")+"\n\nPense à cliquer « 💾 Sauvegarder tout ».");
+  }catch(e){ alert("❌ Connexion impossible : "+e.message); }
+};
+
+// ── Date de prise de vue (EXIF des JPEG) ──
+function exifDate(buf){
+  try{
+    const v=new DataView(buf); if(v.getUint16(0)!==0xFFD8) return null;
+    let o=2;
+    while(o<v.byteLength-4){
+      const m=v.getUint16(o);
+      if(m===0xFFE1&&v.getUint32(o+4)===0x45786966) return lireTiff(v,o+10);
+      if((m&0xFF00)!==0xFF00||m===0xFFDA) break;
+      o+=2+v.getUint16(o+2);
+    }
+  }catch(e){}
+  return null;
+}
+function lireTiff(v,t){
+  const le=v.getUint16(t)===0x4949, g16=p=>v.getUint16(p,le), g32=p=>v.getUint32(p,le);
+  const txt=p=>{let s="";for(let i=0;i<19;i++)s+=String.fromCharCode(v.getUint8(p+i));return s;};
+  const lireIFD=(ifd,cb)=>{const n=g16(ifd);for(let i=0;i<n;i++){const e=ifd+2+i*12;cb(g16(e),e);}};
+  let dt=null,exifPtr=null,orig=null;
+  lireIFD(t+g32(t+4),(tag,e)=>{ if(tag===0x8769) exifPtr=t+g32(e+8); if(tag===0x0132) dt=txt(t+g32(e+8)); });
+  if(exifPtr) lireIFD(exifPtr,(tag,e)=>{ if(tag===0x9003) orig=txt(t+g32(e+8)); });
+  const s=orig||dt; const m=s&&s.match(/^(\d{4}):(\d\d):(\d\d)/);
+  return m?`${m[3]}/${m[2]}/${m[1]}`:null;
+}
+const dateFR=d=>`${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+
+// ── Réduction de la photo (1600 px max, JPEG) ──
+function preparerImage(file){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{
+      const k=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight));
+      const c=document.createElement("canvas"); c.width=Math.round(img.naturalWidth*k); c.height=Math.round(img.naturalHeight*k);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+      const du=c.toDataURL("image/jpeg",0.85); URL.revokeObjectURL(url);
+      res(du);
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error("format non lisible (HEIC ?) — envoie la photo en JPEG")); };
+    img.src=url;
+  });
+}
+
+// ── Ajout de photos au lot ──
+async function ajouterPhotos(files){
+  files=[...files].filter(f=>/^image\//.test(f.type)||/\.(jpe?g|png|heic|heif|webp)$/i.test(f.name));
+  if(!files.length) return;
+  if(!scriptOK()){ alert("Règle d'abord le script Google : 👤 Locataires → 📷 Lecture des photos."); return; }
+  LOT_BILAN=null;
+  const nouveaux=[];
+  for(const file of files){
+    const it={id:"p"+Date.now()+Math.random().toString(36).slice(2,6),nom:file.name,statut:"prep"};
+    LOT.push(it); nouveaux.push([it,file]);
+  }
+  renderPhotos();
+  // préparation (date + réduction) puis lecture, 3 photos à la fois
+  const file2=new Map(nouveaux.map(([it,f])=>[it.id,f]));
+  const file_attente=[...nouveaux.map(x=>x[0])];
+  const travail=async()=>{
+    while(file_attente.length){
+      const it=file_attente.shift(), file=file2.get(it.id);
+      try{
+        const buf=await file.arrayBuffer();
+        it.datePhoto=exifDate(buf)||dateFR(new Date(file.lastModified||Date.now()));
+        it.thumb=await preparerImage(file); it.b64=it.thumb.split(",")[1];
+        it.statut="lecture"; renderPhotos();
+        it.res=await appelScript({action:"lire",image:it.b64,mime:"image/jpeg"});
+        it.statut="lu";
+      }catch(e){ it.statut="erreur"; it.erreur=e.message; }
+      attribuerLot(); renderPhotos();
+    }
+  };
+  await Promise.all([travail(),travail(),travail()]);
+}
+window.choisirPhotos=el=>{ ajouterPhotos(el.files); el.value=""; };
+window.deposerPhotos=ev=>{ ev.preventDefault(); document.getElementById("ph-drop").classList.remove("over"); ajouterPhotos(ev.dataTransfer.files); };
+
+// ── Attribution compteur → locataire ──
+const normNum=s=>String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+function memeCompteur(a,b){
+  a=normNum(a); b=normNum(b); if(!a||!b) return false;
+  if(a===b) return true;
+  const c=a.length<b.length?a:b, l=a.length<b.length?b:a;
+  return c.length>=6&&l.endsWith(c);
+}
+const dernierIdx=(type,locId,avant)=>{ // dernier relevé AVANT la date du lot
+  const rel=[...S()[type].releves.filter(r=>r[locId]!=null&&(!avant||parseD(r.date)<parseD(avant)))].sort(sortByDate);
+  return rel.length?rel[rel.length-1][locId]:null;
+};
+const locsType=t=>t==="eau"?LW():LE();
+function attribuerLot(){
+  // date commune = date de photo la plus fréquente (si pas modifiée à la main)
+  if(!LOT_DATE||!LOT_DATE.manuelle){
+    const n={}; LOT.forEach(it=>{ if(it.datePhoto) n[it.datePhoto]=(n[it.datePhoto]||0)+1; });
+    const best=Object.keys(n).sort((a,b)=>n[b]-n[a])[0];
+    if(best) LOT_DATE={date:best,manuelle:false};
+  }
+  const pris=new Set();
+  LOT.forEach(it=>{ if(it.manuel&&it.locId) pris.add(it.type+"|"+it.locId); });
+  // 1) type + index depuis la lecture IA (une seule fois)
+  LOT.forEach(it=>{
+    if(it.statut!=="lu"||it.init) return;
+    it.init=true;
+    it.type=it.res.type==="eau"?"eau":"elec";
+    it.index=it.res.index!=null&&!isNaN(it.res.index)?it.res.index:null;
+  });
+  // 2) par N° de compteur
+  LOT.forEach(it=>{
+    if(it.statut!=="lu"||it.manuel) return;
+    it.locId=null; it.devine=false;
+    const l=locsType(it.type).find(l=>memeCompteur(l[it.type].numCompteur,it.res.numero));
+    if(l&&!pris.has(it.type+"|"+l.id)){ it.locId=l.id; pris.add(it.type+"|"+l.id); }
+  });
+  // 3) sinon : index le plus proche au-dessus du dernier relevé
+  const couples=[];
+  LOT.forEach(it=>{
+    if(it.statut!=="lu"||it.manuel||it.locId||it.index==null) return;
+    locsType(it.type).forEach(l=>{
+      if(pris.has(it.type+"|"+l.id)) return;
+      const d=dernierIdx(it.type,l.id,LOT_DATE&&LOT_DATE.date);
+      if(d!=null&&it.index>=d) couples.push({it,l,ecart:it.index-d});
+    });
+  });
+  couples.sort((a,b)=>a.ecart-b.ecart).forEach(c=>{
+    if(c.it.locId||pris.has(c.it.type+"|"+c.l.id)) return;
+    c.it.locId=c.l.id; c.it.devine=true; pris.add(c.it.type+"|"+c.l.id);
+  });
+}
+
+// ── Contrôles d'une ligne ──
+function controles(it){
+  const a=[];
+  if(it.statut!=="lu") return a;
+  if(it.res.lisible===false) a.push({n:"warn",t:"IA pas sûre : "+(it.res.remarque||"à vérifier")});
+  if(!it.locId){ a.push({n:"err",t:"choisis le locataire"}); return a; }
+  if(it.index==null||isNaN(it.index)){ a.push({n:"err",t:"index manquant"}); return a; }
+  const d=dernierIdx(it.type,it.locId,LOT_DATE&&LOT_DATE.date);
+  if(d!=null&&it.index<d) a.push({n:"err",t:`inférieur au dernier relevé (${d})`});
+  else if(d!=null&&it.index-d>SEUIL_PHOTO[it.type]) a.push({n:"warn",t:`conso très élevée : +${+(it.index-d).toFixed(3)} ${it.type==="eau"?"m³":"kWh"}`});
+  const doublon=LOT.filter(x=>x!==it&&x.statut==="lu"&&x.type===it.type&&x.locId===it.locId).length;
+  if(doublon) a.push({n:"err",t:"même compteur sur deux photos"});
+  const r=LOT_DATE&&S()[it.type].releves.find(r=>r.date===LOT_DATE.date);
+  if(r&&r[it.locId]!=null&&r[it.locId]!==it.index) a.push({n:"warn",t:`déjà saisi à cette date : ${r[it.locId]} (sera remplacé)`});
+  return a;
+}
+
+window.majPhoto=function(id,champ,val){
+  const it=LOT.find(x=>x.id===id); if(!it) return;
+  if(champ==="type"){ it.type=val; it.locId=null; it.manuel=false; attribuerLot(); }
+  else if(champ==="locId"){ it.locId=val||null; it.manuel=true; it.devine=false; attribuerLot(); }
+  else if(champ==="index"){ const v=parseFloat(String(val).replace(",",".")); it.index=isNaN(v)?null:v; }
+  renderPhotos();
+};
+window.retirerPhoto=function(id){ LOT=LOT.filter(x=>x.id!==id); attribuerLot(); renderPhotos(); };
+window.viderLot=function(){ if(LOT.length&&!confirm("Retirer toutes les photos du lot ?")) return; LOT=[]; LOT_DATE=null; LOT_BILAN=null; renderPhotos(); };
+window.majDateLot=function(v){ const d=fromInputDate(v); if(d){ LOT_DATE={date:d,manuelle:true}; LOT.forEach(it=>{ if(!it.manuel) it.locId=null; }); attribuerLot(); renderPhotos(); } };
+window.voirPhoto=function(id){
+  const it=LOT.find(x=>x.id===id); if(!it||!it.thumb) return;
+  const ov=document.createElement("div");
+  ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:9999;padding:10px;cursor:zoom-out";
+  ov.innerHTML=`<img src="${it.thumb}" style="max-width:100%;max-height:100%;border-radius:8px"/>`;
+  ov.onclick=()=>ov.remove(); document.body.appendChild(ov);
+};
+
+// ── Validation : rangement Drive + enregistrement + factures ──
+window.validerLot=async function(){
+  const lignes=LOT.filter(it=>it.statut==="lu");
+  if(!lignes.length){ alert("Aucune photo lue à valider."); return; }
+  if(LOT.some(it=>it.statut==="prep"||it.statut==="lecture")){ alert("Attends la fin de la lecture des photos."); return; }
+  const bloquants=lignes.filter(it=>controles(it).some(c=>c.n==="err"));
+  if(bloquants.length){ alert("Corrige d'abord les lignes en rouge 🔴 (ou retire-les avec ✕)."); return; }
+  if(!LOT_DATE){ alert("Indique la date du relevé."); return; }
+  const date=LOT_DATE.date;
+  const btn=document.getElementById("ph-valider"); if(btn){ btn.disabled=true; btn.textContent="⏳ Rangement des photos…"; }
+  const bilan={photos:[],erreurs:[],factures:[],attente:[]};
+  for(const it of lignes){
+    const loc=S().locataires.find(l=>l.id===it.locId);
+    const [j,m,a]=(it.datePhoto||date).split("/");
+    const nom=`${a}-${m}-${j} ${it.type==="eau"?"eau":"electricite"} ${loc.nom} ${it.index}.jpg`.replace(/[\\/:*?"<>|]/g,"-");
+    let url=null;
+    try{
+      const o=await appelScript({action:"ranger",type:it.type,date:it.datePhoto||date,nom,image:it.b64,mime:"image/jpeg"});
+      url=o.url; bilan.photos.push(`${loc.nom} (${it.type==="eau"?"eau":"élec"}) → ${o.dossier}`);
+    }catch(e){ bilan.erreurs.push(`${loc.nom} : photo non rangée (${e.message}) — relevé enregistré quand même`); }
+    let r=S()[it.type].releves.find(r=>r.date===date);
+    if(!r){ r={date}; S()[it.type].releves.push(r); S()[it.type].releves.sort(sortByDate); }
+    r[it.locId]=it.index;
+    if(url){ if(!r.photos) r.photos=[]; r.photos.push(url); }
+    if(it.res.numero&&!loc[it.type].numCompteur) loc[it.type].numCompteur=it.res.numero;
+  }
+  await sauvegarder();
+  // Factures de charges automatiques
+  if(autoFacture()){
+    const concernes=[...new Set(lignes.map(it=>it.locId))].map(id=>S().locataires.find(l=>l.id===id)).filter(aFacture);
+    for(const loc of concernes){
+      try{
+        const r=await creerFactureCharges(loc.id,date,{interactif:false});
+        if(!r.ok){ bilan.attente.push(`${loc.facture.raison||loc.nom} : ${r.msg}`); continue; }
+        const o=await rangerFactureDrive(r);
+        bilan.factures.push({txt:`${r.fc.num} — ${loc.facture.raison} — ${eur(r.fc.ttc)} TTC → ${o.dossier}`,url:o.url});
+      }catch(e){ bilan.erreurs.push(`Facture ${loc.facture.raison||loc.nom} : ${e.message}`); }
+    }
+  }
+  LOT=[]; LOT_DATE=null; LOT_BILAN={date,...bilan};
+  renderPhotos();
+};
+
+function renderPhotos(){
+  const pane=document.getElementById("pane-photos"); if(!pane) return;
+  let h="";
+  if(!scriptOK()) h+=`<div class="abox warn">⚙️ Pour lire les photos, règle d'abord le script Google dans 👤 Locataires → « 📷 Lecture des photos » (adresse + mot de passe). Le mode d'emploi est dans le guide PDF.</div>`;
+  if(LOT_BILAN){
+    const b=LOT_BILAN;
+    h+=`<div class="card" style="border-left:3px solid var(--ok)"><div class="ctitle">✅ Relevés du ${b.date} enregistrés</div><div style="font-size:12px;line-height:1.7">
+      ${b.photos.map(t=>"📷 "+t).join("<br>")}
+      ${b.factures.length?"<br>"+b.factures.map(f=>`🧾 <a href="${f.url}" target="_blank" style="color:var(--blue)">${f.txt}</a>`).join("<br>"):""}
+      ${b.attente.length?"<br>"+b.attente.map(t=>"⏳ Facture non créée — "+t+" (bouton 🧾 dans ⚡/💧 quand ce sera complet)").join("<br>"):""}
+      ${b.erreurs.length?"<br>"+b.erreurs.map(t=>`<span style="color:var(--err)">❌ ${t}</span>`).join("<br>"):""}
+    </div></div>`;
+  }
+  h+=`<div class="card">
+    <div class="ctitle">📷 Déposer les photos des compteurs</div>
+    <label id="ph-drop" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="deposerPhotos(event)"
+      style="display:block;border:2px dashed var(--border2);border-radius:var(--r);padding:26px 12px;text-align:center;cursor:pointer;color:var(--text2);font-size:13px">
+      <div style="font-size:30px">📥</div>
+      Glisse ici les photos (électricité et eau mélangées)<br>ou <u>clique pour les choisir</u> (iPhone : Photothèque)
+      <input type="file" accept="image/*" multiple style="display:none" onchange="choisirPhotos(this)"/>
+    </label>
+    <div style="font-size:11px;color:var(--text3);margin-top:8px">L'IA lit l'index et le N° du compteur, l'appli propose le locataire. Tu vérifies, puis « Valider » : photos rangées dans Drive au mois de la prise de vue, relevés enregistrés${autoFacture()?", factures de charges créées":""}.</div>
+  </div>`;
+  if(LOT.length){
+    const typeOpts=t=>`<option value="elec" ${t==="elec"?"selected":""}>⚡ Élec</option><option value="eau" ${t==="eau"?"selected":""}>💧 Eau</option>`;
+    h+=`<div class="card"><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px">
+      <div class="fg" style="margin:0"><label>Date du relevé</label><input type="date" value="${LOT_DATE?toInputDate(LOT_DATE.date):""}" onchange="majDateLot(this.value)"/></div>
+      <div style="font-size:11px;color:var(--text3);flex:1">${LOT_DATE&&!LOT_DATE.manuelle?"date de prise des photos":"date choisie à la main"} — tous les compteurs du lot sont enregistrés à cette date.</div>
+      <button class="btn btn-s" onclick="viderLot()">🗑 Tout retirer</button>
+    </div><div style="overflow-x:auto"><table><thead><tr><th>Photo</th><th>Type</th><th>Locataire</th><th>Index</th><th>Conso</th><th>Contrôle</th><th></th></tr></thead><tbody>`;
+    LOT.forEach(it=>{
+      const img=it.thumb?`<img src="${it.thumb}" onclick="voirPhoto('${it.id}')" style="width:64px;height:64px;object-fit:cover;border-radius:6px;cursor:zoom-in"/>`:`<div style="width:64px;height:64px;border-radius:6px;background:var(--surf2)"></div>`;
+      if(it.statut!=="lu"){
+        h+=`<tr><td>${img}</td><td colspan="5" style="text-align:left;font-size:12px">${it.statut==="erreur"?`<span style="color:var(--err)">❌ ${it.nom} : ${it.erreur}</span>`:`<span class="spin"></span> ${it.statut==="prep"?"Préparation":"Lecture par l'IA"}… <span style="color:var(--text3)">${it.nom}</span>`}</td><td><button class="btn-del" onclick="retirerPhoto('${it.id}')">✕</button></td></tr>`;
+        return;
+      }
+      const locs=locsType(it.type);
+      const d=it.locId?dernierIdx(it.type,it.locId,LOT_DATE&&LOT_DATE.date):null;
+      const conso=(d!=null&&it.index!=null)?+(it.index-d).toFixed(it.type==="eau"?3:2):null;
+      const ctl=controles(it);
+      const mois=it.datePhoto?MOIS_LONG[+it.datePhoto.split("/")[1]-1].normalize("NFD").replace(/[̀-ͯ]/g,"")+" "+it.datePhoto.split("/")[2]:"";
+      h+=`<tr>
+        <td>${img}<div style="font-size:9px;color:var(--text3)">${it.datePhoto||""}</div></td>
+        <td><select onchange="majPhoto('${it.id}','type',this.value)" style="font-size:12px;padding:3px;background:var(--surf2);color:var(--text);border:.5px solid var(--border2);border-radius:4px">${typeOpts(it.type)}</select></td>
+        <td style="text-align:left"><select onchange="majPhoto('${it.id}','locId',this.value)" style="font-size:12px;padding:3px;max-width:150px;background:var(--surf2);color:var(--text);border:.5px solid var(--border2);border-radius:4px">
+          <option value="">— choisir —</option>${locs.map(l=>`<option value="${l.id}" ${l.id===it.locId?"selected":""}>${l.nom}</option>`).join("")}</select>
+          ${it.devine?`<div style="font-size:10px;color:var(--warn)">deviné (index le plus proche)</div>`:""}
+          <div style="font-size:10px;color:var(--text3)">N° lu : ${it.res.numero||"—"}</div></td>
+        <td><input type="number" step="any" value="${it.index!=null?it.index:""}" onchange="majPhoto('${it.id}','index',this.value)" style="width:95px;background:var(--surf2);border:.5px solid var(--border2);border-radius:4px;padding:3px 5px;font-size:12px;color:var(--text);font-family:inherit"/>
+          <div style="font-size:10px;color:var(--text3)">avant : ${d!=null?d:"—"}</div></td>
+        <td>${conso!=null?`<span class="badge ${it.type==="eau"?badgeM3(conso):badgeKwh(conso)}">${conso} ${it.type==="eau"?"m³":"kWh"}</span>`:"—"}</td>
+        <td style="text-align:left;font-size:11px">${ctl.length?ctl.map(c=>`<div style="color:${c.n==="err"?"var(--err)":"var(--warn)"}">${c.n==="err"?"🔴":"🟠"} ${c.t}</div>`).join(""):`<span style="color:var(--ok)">✅ OK</span>`}
+          <div style="color:var(--text3);font-size:10px">📁 ${it.type==="eau"?"EAU":"ELECTRICITE"} ${mois}</div></td>
+        <td><button class="btn-del" onclick="retirerPhoto('${it.id}')">✕</button></td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div>
+      <button id="ph-valider" class="btn btn-p" style="margin-top:10px" onclick="validerLot()">✅ Valider : ranger les photos${autoFacture()?", enregistrer et faire les factures":" et enregistrer"}</button></div>`;
+  }
+  pane.innerHTML=h;
+}
 
 // ════════════════════════════════════════════════════════════
 //  INIT
